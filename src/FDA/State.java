@@ -2,80 +2,143 @@ package FDA;
 
 import Tools.Console;
 
+
 import java.util.*;
 import java.util.function.Function;
 
 public class State <T>{
-    private Map<T, State<T>> transitions = new HashMap<>();
-    private Map<Function<T,Boolean>,State<T>> transitionFunctions = new HashMap<>();
-    private List<SemanticAction<T>> actions = new ArrayList<>(); //conjunto acciones semanticas
 
+    private ArrayList<Transition<T>> transitions = new ArrayList<>();
+    private Transition other =null;
     private String name = "Node";
 
     public State(String name){
         this.name = name;
     }
-    public State(){
+    public State(){}
+
+
+    public Transition addTransition(T transitionValue, State toTransit,boolean ignoreRead){
+        checkAddTransition(toTransit,ignoreRead);
+
+        Transition transition =new Transition(transitionValue,toTransit,ignoreRead);
+        transitions.add(transition);
+        return transition;
+    }
+    public Transition addTransitionFunction(Function<T,Boolean>transitionFunction, State toTransit,boolean ignoreRead){
+        checkAddTransition(toTransit,ignoreRead);
+
+        Transition transition = new Transition(transitionFunction,toTransit,ignoreRead);
+        transitions.add(transition);
+        return transition;
 
     }
+    public void addOtherElementTransitionFunction(State toTransit, boolean ignoreRead){
+        checkAddTransition(toTransit,ignoreRead);
 
+        Transition transition = new Transition<T>(this::otherFunction,toTransit,ignoreRead);
+        other = transition;
 
-    public void addTransition(T transitionValue, State<T> toTransit){
-        if(toTransit == null){
-            throw new IllegalArgumentException("Transitioned node must be not null");
-        }
-
-        if(transitions.get(transitionValue)==toTransit){ //asegurar que no hay dos iguales, es determinista
-            throw new IllegalArgumentException("Repeated transition value");
-        }
-        transitions.put(transitionValue,toTransit);
     }
-    public void addTransitionFunction(Function<T,Boolean>transitionFunction, State<T> toTransit){
+    private void checkAddTransition(State toTransit,boolean ignoreRead){
         if(toTransit== null){
             throw new IllegalArgumentException("Transitioned node must be not null");
         }
-        if(transitionFunctions.get(transitionFunction)==toTransit){
-            throw new IllegalArgumentException("Repeated transition function");
+        if(!(toTransit instanceof FinalState) && ignoreRead == true){
+            throw new IllegalArgumentException("Ignore read can only be used in FinalStates");
         }
-        transitionFunctions.put(transitionFunction,toTransit);
-
     }
-    protected void checkTransitions(FDA<T>fda,T next,boolean debug){
-        callActions();
-        if(this instanceof FinalState){
+    private boolean otherFunction(T next){
 
+        for(Transition transition:transitions){
+            if(transition.apply(next)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "State{" +
+                "transitions=" + transitions +
+                ", name='" + name + '\'' +
+                '}';
+    }
+
+    protected FDAData<T> feedForward(Transition<T>transition, FDA<T>fda, boolean debug, T prev){
+
+
+
+        if(this instanceof FinalState){
+            if(transition.isReadNext()){
+                printPath(debug,prev,true,false);
+            }else{
+                printPath(debug,prev,true,true);
+            }
+
+            if(debug)Console.print(Console.ANSI_GREEN+" VALID \n");
+
+            fda.onReadSequence((FinalState<T>) this);
+            return new FDAData<T>(1,transition,this,prev);
+        }
+        printPath(debug,prev,false,false);
+        T character;
+
+        if(transition==null || transition.isReadNext()){
+            character = fda.readNext();
+        }else{
+            character = prev;
         }
 
         State<T>nextState = null;
-        for(Map.Entry<T, State<T>>entry:transitions.entrySet()){
-            if(entry.getKey().equals(next)){
-                nextState = entry.getValue();
-            }
-        }
-        if(nextState==null){
-            for(Map.Entry<Function<T,Boolean>, State<T>>entry:transitionFunctions.entrySet()){ //recorremos las funciones
+        Transition<T>transitionUsed = null;
 
-                if(entry.getKey().apply(next)){
-                    nextState = entry.getValue();
-                }
-            }
-            if(debug){
-                Console.print(Console.ANSI_RED+"Not available transition. Not recognized by FDA ");
-                return;
+        for(Transition element :transitions){
+            if(element.apply(character)){
+                nextState = element.getToTransit();
+                transitionUsed = element;
             }
         }
+        if(nextState == null&& other!=null){
+            if(other.apply(character)){
+                nextState = other.getToTransit();
+                transitionUsed = other;
+            }
+        }
+
+
+        if(nextState == null){
+            Console.print(Console.ANSI_RED+"NON AVAILABLE TRANSITION FOR ELEMENT "+Console.ANSI_PURPLE+"["+character+"]\n");
+            return new FDAData<T>(-2,transition,this,character);
+        }
+        if(transitionUsed!=null){
+            transitionUsed.callActions(character);
+        }
+
         try {
-            nextState.checkTransitions(fda,fda.readNext(), debug);
+            return nextState.feedForward(transitionUsed,fda, debug,character);
         }catch(IndexOutOfBoundsException exception){
-            Console.print(Console.ANSI_RED+"Reach final");
+            Console.print(Console.ANSI_RED+"REACH END OF FILE BUT NOT REACHED FINAL STATE\n");
+            return new FDAData<T>(-1,transitionUsed,this,character);
+        }
+
+
+    }
+    public void printPath(boolean debug,T prev,boolean isFinal,boolean ignoreRead){
+        if(isFinal){
+            if(ignoreRead){
+                if(debug)Console.print(Console.ANSI_CYAN+"("+prev+") "+Console.ANSI_BLUE+"IGNORE READ "+Console.ANSI_YELLOW+"<<"+name+">>"+Console.ANSI_PURPLE+" ==> ");
+            }else{
+                if(debug)Console.print(Console.ANSI_CYAN+"("+prev+") "+Console.ANSI_YELLOW+"<<"+name+">>"+Console.ANSI_PURPLE+" ==> ");
+            }
+
+        }else{
+            if(debug)Console.print(Console.ANSI_CYAN+"("+prev+") "+Console.ANSI_YELLOW+name+Console.ANSI_PURPLE+" ==> ");
         }
 
     }
-    public void addSemanticAction(SemanticAction action){
-        actions.add(action);
-    }
-    private void callActions(){
-        actions.stream().iterator().forEachRemaining((SemanticAction action)->action.onAction(this));
-    }
+
+
 
 }
