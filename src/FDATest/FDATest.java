@@ -3,30 +3,21 @@ package FDATest;
 import FDA.FDA;
 import FDA.*;
 
+import java.util.Iterator;
 import java.util.Scanner;
 
 public class FDATest {
     static int cont =-1;
     static String analyze;
     public static void main(String[]args){
+
         Scanner sc = new Scanner(System.in);
         analyze = sc.nextLine();
         analyze = analyze+"\\";
-        FDA<Character>fda = new FDA<Character>() {
-            @Override
-            public Character readNext() throws IndexOutOfBoundsException {
-                if(!hasNext()){
-                    throw new IndexOutOfBoundsException("Reach limit");
-                }
-                cont++;
-                Character c = analyze.charAt(cont); //cogemos siguiente caracter de la linea
-                return c;
-            }
 
-            @Override
-            public boolean hasNext() {
-                return cont < analyze.length()-1;
-            }
+        Iterator<Character> a =analyze.chars().mapToObj(i -> (char)i).iterator();
+
+        FDA<Character>fda = new FDA<Character>() {
 
             @Override
             public void onReadSequence(FinalState<Character> finalState) {
@@ -60,9 +51,10 @@ public class FDATest {
         initial.addTransitionFunction(FDATest::isDelimiter,initial,false);
 
         fda.setRoot(initial);
-        fda.execute();
+        fda.execute(a);
 
     }
+
     public static boolean isLetter(Character character){
         return Character.isLetter(character);
     }

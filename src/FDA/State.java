@@ -67,9 +67,6 @@ public class State <T>{
     }
 
     protected FDAData<T> feedForward(Transition<T>transition, FDA<T>fda, boolean debug, T prev){
-
-
-
         if(this instanceof FinalState){
             if(transition.isReadNext()){
                 printPath(debug,prev,true,false);
@@ -86,10 +83,17 @@ public class State <T>{
         T character;
 
         if(transition==null || transition.isReadNext()){
-            character = fda.readNext();
+            if(fda.getIterator().hasNext()){
+                character = (T)fda.getIterator().next();
+            }else{
+                Console.print(Console.ANSI_RED+"REACH END OF FILE BUT NOT REACHED FINAL STATE\n");
+                return new FDAData<T>(-1,transition,this,prev);
+            }
+
         }else{
             character = prev;
         }
+
 
         State<T>nextState = null;
         Transition<T>transitionUsed = null;
@@ -100,13 +104,10 @@ public class State <T>{
                 transitionUsed = element;
             }
         }
-        if(nextState == null&& other!=null){
-            if(other.apply(character)){
-                nextState = other.getToTransit();
-                transitionUsed = other;
-            }
+        if(nextState == null && other!=null){
+            nextState = other.getToTransit();
+            transitionUsed = other;
         }
-
 
         if(nextState == null){
             Console.print(Console.ANSI_RED+"NON AVAILABLE TRANSITION FOR ELEMENT "+Console.ANSI_PURPLE+"["+character+"]\n");
@@ -115,13 +116,8 @@ public class State <T>{
         if(transitionUsed!=null){
             transitionUsed.callActions(character);
         }
+        return nextState.feedForward(transitionUsed,fda, debug,character);
 
-        try {
-            return nextState.feedForward(transitionUsed,fda, debug,character);
-        }catch(IndexOutOfBoundsException exception){
-            Console.print(Console.ANSI_RED+"REACH END OF FILE BUT NOT REACHED FINAL STATE\n");
-            return new FDAData<T>(-1,transitionUsed,this,character);
-        }
 
 
     }
