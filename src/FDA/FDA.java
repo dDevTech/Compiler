@@ -2,7 +2,10 @@ package FDA;
 
 import Tools.Console;
 
+import java.sql.Array;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public abstract class FDA<T>{
     private State<T> root;
@@ -11,7 +14,7 @@ public abstract class FDA<T>{
     private Iterator<T> iterator;
 
 
-    public abstract void onReadSequence(FinalState<T>finalState);
+    public abstract void onReadSequence(FinalState<T>finalState, List<T> readSequence);
     public State<T> getRoot() {
         return root;
     }
@@ -36,9 +39,9 @@ public abstract class FDA<T>{
         FDAData<T>data = null ;
         do {
             if(data==null){
-                data = root.feedForward(null,this,debug,null);
+                data = root.feedForward(null,this,debug,null,new ArrayList<>());
             }else{
-                data = root.feedForward(data.getLastTransition(),this,debug,data.getLastElement());
+                data = root.feedForward(data.getLastTransition(),this,debug,data.getLastElement(),new ArrayList<>());
             }
 
         }while(iterator.hasNext()&& data.getInternalCode()>0);

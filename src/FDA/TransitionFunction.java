@@ -43,4 +43,16 @@ public class TransitionFunction<T>{
     public void setRead(boolean read) {
         this.read = read;
     }
+    public static boolean isLetter(Character character){
+        return Character.isLetter(character);
+    }
+    public static boolean isDigit(Character character){
+        return Character.isDigit(character);
+    }
+    public static boolean isLetterDigit(Character character){
+        return isLetter(character)||isDigit(character);
+    }
+    public static boolean isDelimiter(Character character){
+        return Character.isWhitespace(character);
+    }
 }
