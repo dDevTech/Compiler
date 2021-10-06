@@ -1,8 +1,9 @@
 package FDA;
 
 import Tools.Console;
+import Tools.FileIterator;
 
-import java.sql.Array;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -11,7 +12,7 @@ public abstract class FDA<T>{
     private State<T> root;
 
     private boolean debug = false;
-    private Iterator<T> iterator;
+    private FileIterator iterator;
 
 
     public abstract void onReadSequence(FinalState<T>finalState, List<T> readSequence);
@@ -34,9 +35,10 @@ public abstract class FDA<T>{
 
 
 
-    public void execute(Iterator iterator){
+    public void execute(FileIterator iterator){
         this.iterator = iterator;
         FDAData<T>data = null ;
+        Console.printlnInfo("FDA","Executing");
         do {
             if(data==null){
                 data = root.feedForward(null,this,debug,null,new ArrayList<>());
@@ -44,7 +46,7 @@ public abstract class FDA<T>{
                 data = root.feedForward(data.getLastTransition(),this,debug,data.getLastElement(),new ArrayList<>());
             }
 
-        }while(iterator.hasNext()&& data.getInternalCode()>0);
+        }while((iterator.hasNext()||!data.getLastTransition().isReadNext())&& data.getInternalCode()>0);
         if(data.getInternalCode()<0){
             Console.printlnInfo("FDA",Console.ANSI_RED+"Internal code: "+data.getInternalCode());
         }else{
@@ -55,11 +57,11 @@ public abstract class FDA<T>{
 
     }
 
-    public Iterator getIterator() {
+    public FileIterator getIterator() {
         return iterator;
     }
 
-    public void setIterator(Iterator<T> iterator) {
+    public void setIterator(FileIterator iterator) {
         this.iterator = iterator;
     }
 }

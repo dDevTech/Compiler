@@ -1,6 +1,9 @@
 package FDA;
 
+import Common.ErrorHandler;
 import Tools.Console;
+import Tools.FileIterator;
+import jdk.swing.interop.SwingInterOpUtils;
 
 
 import java.util.*;
@@ -9,8 +12,9 @@ import java.util.function.Function;
 public class State <T>{
 
     private ArrayList<Transition<T>> transitions = new ArrayList<>();
-    private Transition other =null;
+    private Transition<T> other =null;
     private String name = "Node";
+    private String noTransitionError = "NOT AVAILABLE TRANSITION FOR ELEMENT ";
 
 
     public State(String name){
@@ -18,40 +22,46 @@ public class State <T>{
     }
     public State(){}
 
+    public String getNoTransitionError() {
+        return noTransitionError;
+    }
 
-    public Transition addTransition(T transitionValue, State toTransit,boolean ignoreRead,boolean write){
+    public void setNoTransitionError(String noTransitionError) {
+        this.noTransitionError = noTransitionError;
+    }
+
+    public Transition<T> addTransition(T transitionValue, State<T> toTransit, boolean ignoreRead, boolean write){
         checkAddTransition(toTransit,ignoreRead);
 
-        Transition transition =new Transition(transitionValue,toTransit,ignoreRead,write);
+        Transition<T> transition =new Transition<T>(transitionValue,toTransit,ignoreRead,write);
         transitions.add(transition);
         return transition;
     }
-    public Transition addTransitionFunction(Function<T,Boolean>transitionFunction, State toTransit,boolean ignoreRead,boolean write){
+    public Transition<T> addTransitionFunction(Function<T,Boolean>transitionFunction, State<T> toTransit,boolean ignoreRead,boolean write){
         checkAddTransition(toTransit,ignoreRead);
 
-        Transition transition = new Transition(transitionFunction,toTransit,ignoreRead,write);
+        Transition<T> transition = new Transition<T>(transitionFunction,toTransit,ignoreRead,write);
         transitions.add(transition);
         return transition;
 
     }
-    public void addOtherElementTransitionFunction(State toTransit, boolean ignoreRead,boolean write){
+    public void addOtherElementTransitionFunction(State<T> toTransit, boolean ignoreRead,boolean write){
         checkAddTransition(toTransit,ignoreRead);
 
-        Transition transition = new Transition<T>(this::otherFunction,toTransit,ignoreRead,write);
-        other = transition;
+        other = new Transition<T>(this::otherFunction,toTransit,ignoreRead,write);
 
     }
-    private void checkAddTransition(State toTransit,boolean ignoreRead){
+    private void checkAddTransition(State<T> toTransit,boolean ignoreRead){
         if(toTransit== null){
             throw new IllegalArgumentException("Transitioned node must be not null");
         }
-        if(!(toTransit instanceof FinalState) && ignoreRead == true){
+        if(!(toTransit instanceof FinalState) && ignoreRead){
             throw new IllegalArgumentException("Ignore read can only be used in FinalStates");
         }
     }
     private boolean otherFunction(T next){
 
-        for(Transition transition:transitions){
+        for(Transition<T> transition:transitions){
             if(transition.apply(next)){
                 return false;
             }
@@ -67,15 +77,12 @@ public class State <T>{
                 '}';
     }
 
-    protected FDAData<T> feedForward(Transition<T>transition, FDA<T>fda, boolean debug, T prev,List<T>sequence){
+    protected FDAData<T> feedForward(Transition<T>transition, FDA<T>fda, boolean debug, T prev, List<T>sequence){
         //Check first if current node is final
         if(this instanceof FinalState){
-            if(transition.isReadNext()){
-                printPath(debug,prev,true,false);
-            }else{
-                printPath(debug,prev,true,true);
+            if(prev!=null){
+                printPath(debug, prev.toString(), true, !transition.isReadNext(), transition.isWrite());
             }
-
             if(debug)Console.print(Console.ANSI_GREEN+" VALID \n");
 
             fda.onReadSequence((FinalState<T>) this,sequence);
@@ -83,7 +90,15 @@ public class State <T>{
             //end read sequence
             return new FDAData<T>(1,transition,this,prev);
         }
-        printPath(debug,prev,false,false);
+        if(prev!=null){
+
+            if(transition!=null){
+                printPath(debug,prev.toString(),false,false,transition.isWrite());
+            }else{
+                printPath(debug,prev.toString(),false,false,false);
+            }
+        }
+
 
         //SELECTION OF NEXT CHARACTER
         T character;
@@ -92,7 +107,7 @@ public class State <T>{
             if(fda.getIterator().hasNext()){
                 character = (T)fda.getIterator().next();//read next character
             }else{
-                Console.print(Console.ANSI_RED+"REACH END OF FILE BUT NOT REACHED FINAL STATE\n");
+                Console.print(Console.ANSI_RED+"REACH END OF ITERATOR BUT NOT REACHED FINAL STATE\n");
                 return new FDAData<T>(-1,transition,this,prev);
             }
 
@@ -104,7 +119,7 @@ public class State <T>{
         State<T>nextState = null;
         Transition<T>transitionUsed = null;
 
-        for(Transition element :transitions){
+        for(Transition<T> element :transitions){
             if(element.apply(character)){
                 nextState = element.getToTransit();
                 transitionUsed = element;
@@ -115,8 +130,9 @@ public class State <T>{
             transitionUsed = other;
         }
 
-        if(nextState == null){//If there is not available transition
-            Console.print(Console.ANSI_RED+"NON AVAILABLE TRANSITION FOR ELEMENT "+Console.ANSI_PURPLE+"["+character+"]\n");
+        if(nextState == null){//If there is no available transition
+            //Console.print(Console.ANSI_RED+"NOT AVAILABLE TRANSITION FOR ELEMENT "+Console.ANSI_PURPLE+"["+character+"]\n");
+            ErrorHandler.showLexicError(noTransitionError,character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),-2);
             return new FDAData<T>(-2,transition,this,character);
         }
 
@@ -124,7 +140,13 @@ public class State <T>{
             if(transitionUsed.isWrite()){
                 sequence.add(character);
             }
-            transitionUsed.callActions(character,sequence);
+            try{
+                transitionUsed.callActions(character,sequence,fda.getIterator());
+            } catch (FDAException e) {
+                ErrorHandler.showLexicError(e.getMessage(),character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),e.getErrorCode());
+                return new FDAData<T>(e.getErrorCode(),transition,this,character);
+            }
+
         }
         // go to next  state of transition
         return nextState.feedForward(transitionUsed,fda, debug,character,sequence);
@@ -132,17 +154,25 @@ public class State <T>{
 
 
     }
-    public void printPath(boolean debug,T prev,boolean isFinal,boolean ignoreRead){
-        if(!debug) return;
-        if(isFinal){
-            if(ignoreRead){
-               Console.print(Console.ANSI_CYAN+"("+prev+") "+Console.ANSI_BLUE+"IGNORE READ "+Console.ANSI_YELLOW+"<<"+name+">>"+Console.ANSI_PURPLE+" ==> ");
-            }else{
-               Console.print(Console.ANSI_CYAN+"("+prev+") "+Console.ANSI_YELLOW+"<<"+name+">>"+Console.ANSI_PURPLE+" ==> ");
-            }
 
+    public void printPath(boolean debug,String prev,boolean isFinal,boolean ignoreRead,boolean write){
+
+
+        if(!debug) return;
+        String modifiers = "";
+        prev = prev.replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
+
+
+        if(ignoreRead){
+            modifiers+=Console.ANSI_BLUE+"[IGNORE READ]";
+        }
+        if(write){
+            modifiers+=Console.ANSI_GREEN+"[W] ";
+        }
+        if(isFinal){
+            Console.print(Console.ANSI_CYAN+"("+prev+") "+modifiers +Console.ANSI_YELLOW+"<<"+name+">>"+Console.ANSI_PURPLE+" ==> ");
         }else{
-            Console.print(Console.ANSI_CYAN+"("+prev+") "+Console.ANSI_YELLOW+name+Console.ANSI_PURPLE+" ==> ");
+            Console.print(Console.ANSI_CYAN+"("+prev+") "+modifiers+Console.ANSI_YELLOW+name+Console.ANSI_PURPLE+" ==> ");
         }
 
     }

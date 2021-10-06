@@ -1,8 +1,11 @@
 package FDA;
 
-import jdk.swing.interop.SwingInterOpUtils;
+import Common.ErrorHandler;
+import Tools.FileIterator;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
@@ -12,20 +15,23 @@ public class Transition<T>{
     private State<T>toTransit;
     private boolean readNext = true;
     private boolean write = false;
-    private List<SemanticAction<T>> actions = new ArrayList<>(); //conjunto acciones semanticas
+    private List<SemanticAction<T>> actions;
     public Transition(T transition,State<T>toTransit){
         this.toTransit = toTransit;
         this.transition = transition;
+        actions = new ArrayList<>();
     }
     public Transition(Function<T,Boolean> transitionFunction,State<T>toTransit){
         this.toTransit = toTransit;
         this.function = transitionFunction;
+        actions = new ArrayList<>();
     }
     public Transition(T transition,State<T>toTransit,boolean ignoreRead,boolean write){
         this.toTransit = toTransit;
         this.transition = transition;
         this.readNext = !ignoreRead;
         this.write = write;
+        actions = new ArrayList<>();
     }
     public Transition(Function<T,Boolean> transitionFunction,State<T>toTransit,boolean ignoreRead,boolean write){
 
@@ -33,23 +39,31 @@ public class Transition<T>{
         this.function = transitionFunction;
         this.readNext = !ignoreRead;
         this.write = write;
+        actions = new ArrayList<>();
     }
 
     public boolean isReadNext() {
         return readNext;
     }
-    public void addSemanticAction(SemanticAction action){
+    public void addSemanticAction(SemanticAction<T> action){
         actions.add(action);
     }
     public void setReadNext(boolean readNext) {
         this.readNext = readNext;
     }
-    protected void callActions(T element,List<T>elements){
-        actions.stream().iterator().forEachRemaining((SemanticAction action)->action.onAction(toTransit,element,elements));
+    protected void callActions(T element, List<T>elements, FileIterator iterator) throws FDAException{
+        Iterator<SemanticAction<T>>actionsIt =actions.stream().iterator();
+
+        while(actionsIt.hasNext()){
+            SemanticAction<T> action = actionsIt.next();
+            action.onAction(toTransit,element,elements);
+        }
+
+
     }
     public boolean apply(T element){
 
-        if(isFunct()){
+        if(isFunction()){
             return function.apply(element);
         }else{
             return transition.equals(element);
@@ -75,7 +89,7 @@ public class Transition<T>{
 
 
 
-    public boolean isFunct() {
+    public boolean isFunction() {
         return (function!=null);
     }
 
