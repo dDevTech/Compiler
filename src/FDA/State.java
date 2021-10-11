@@ -132,8 +132,9 @@ public class State <T>{
 
         if(nextState == null){//If there is no available transition
             //Console.print(Console.ANSI_RED+"NOT AVAILABLE TRANSITION FOR ELEMENT "+Console.ANSI_PURPLE+"["+character+"]\n");
-            ErrorHandler.showLexicError(noTransitionError,character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),-2);
-            return new FDAData<T>(-2,transition,this,character);
+            ErrorHandler.showLexicError(debug,noTransitionError,character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),-2);
+            fda.getIterator().skipLine();
+            return new FDAData<T>(1,transition,this,character);
         }
 
         if(transitionUsed!=null){//If there is transition call semantic actions of transition
@@ -143,8 +144,10 @@ public class State <T>{
             try{
                 transitionUsed.callActions(character,sequence,fda.getIterator());
             } catch (FDAException e) {
-                ErrorHandler.showLexicError(e.getMessage(),character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),e.getErrorCode());
-                return new FDAData<T>(e.getErrorCode(),transition,this,character);
+
+                ErrorHandler.showLexicError(debug,e.getMessage(),character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),e.getErrorCode());
+                fda.getIterator().skipLine();
+                return new FDAData<T>(1,transition,this,character);
             }
 
         }

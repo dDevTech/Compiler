@@ -2,6 +2,7 @@ package FDATest;
 
 import FDA.FDA;
 import FDA.*;
+import Tools.Console;
 import Tools.FileIterator;
 
 import java.util.Iterator;
@@ -55,7 +56,7 @@ public class FDATest {
         transition2.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                System.out.print(sequence);
+                //System.out.print(sequence);
                 if(sequence.size()>5){
                     throw new FDAException(-3,"Variables must be max size of 5");
                 }
@@ -69,9 +70,12 @@ public class FDATest {
         initial.addTransition('\\',eof,false,false);
 
         initial.addTransitionFunction(TransitionFunction::isDelimiter,initial,false,false);
-
+        Console.printLegend();
         fda.setRoot(initial);
-        fda.execute(it);
+        fda.setIterator(it);
+        while(fda.executeNext()>0){
+
+        }
 
 
 

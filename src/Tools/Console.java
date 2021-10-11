@@ -46,4 +46,12 @@ public class Console {
         String strDate = sdfDate.format(now);
         return strDate;
     }
+    public static void printLegend() {
+        Console.print(Console.ANSI_BLUE+"(_)    :  "+Console.ANSI_WHITE +"previous transition element\n");
+        Console.print(Console.ANSI_YELLOW+"name_state   :  "+Console.ANSI_WHITE +"current state (name)\n");
+        Console.print(Console.ANSI_PURPLE+"==>   :  "+Console.ANSI_WHITE +"transited available to node\n");
+        Console.print(Console.ANSI_GREEN+"[W]   : "+Console.ANSI_WHITE +"Previous transition will concatenate element (WRITE)\n");
+        Console.print(Console.ANSI_YELLOW+"<<NODE>> : "+Console.ANSI_WHITE +"Final state reached\n");
+        Console.print(Console.ANSI_BLUE+"[IGNORE READ] : "+Console.ANSI_WHITE +"transited available to node but ignored and next character will be previous character\n");
+    }
 }

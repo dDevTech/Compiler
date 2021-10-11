@@ -51,6 +51,12 @@ public class FileIterator implements Iterator<Character> {
         }
 
     }
+    public void skipLine(){
+        sc.nextLine();
+        column=0;
+        line++;
+    }
+
 
     public int getColumn() {
         return column;

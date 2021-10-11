@@ -13,7 +13,7 @@ public abstract class FDA<T>{
 
     private boolean debug = false;
     private FileIterator iterator;
-
+    private FDAData<T>previousData;
 
     public abstract void onReadSequence(FinalState<T>finalState, List<T> readSequence);
     public State<T> getRoot() {
@@ -37,22 +37,45 @@ public abstract class FDA<T>{
 
     public void execute(FileIterator iterator){
         this.iterator = iterator;
-        FDAData<T>data = null ;
+        if(debug){
+            Console.printLegend();
+        }
         Console.printlnInfo("FDA","Executing");
         do {
-            if(data==null){
-                data = root.feedForward(null,this,debug,null,new ArrayList<>());
+            if(previousData==null){
+                previousData = root.feedForward(null,this,debug,null,new ArrayList<>());
             }else{
-                data = root.feedForward(data.getLastTransition(),this,debug,data.getLastElement(),new ArrayList<>());
+                previousData = root.feedForward(previousData.getLastTransition(),this,debug,previousData.getLastElement(),new ArrayList<>());
             }
 
-        }while((iterator.hasNext()||!data.getLastTransition().isReadNext())&& data.getInternalCode()>0);
-        if(data.getInternalCode()<0){
-            Console.printlnInfo("FDA",Console.ANSI_RED+"Internal code: "+data.getInternalCode());
+        }while((iterator.hasNext()||!previousData.getLastTransition().isReadNext())&& previousData.getInternalCode()>0);
+        if(previousData.getInternalCode()<0){
+            Console.printlnInfo("FDA",Console.ANSI_RED+"Internal code: "+previousData.getInternalCode());
         }else{
-            Console.printlnInfo("FDA",Console.ANSI_GREEN+"Internal code: "+data.getInternalCode());
+            Console.printlnInfo("FDA",Console.ANSI_GREEN+"Internal code: "+previousData.getInternalCode());
         }
 
+
+
+    }
+    public int executeNext(){
+
+
+
+        if(previousData==null){
+            previousData = root.feedForward(null,this,debug,null,new ArrayList<>());
+        }else{
+            if((iterator.hasNext()||!previousData.getLastTransition().isReadNext())&& previousData.getInternalCode()>0){
+                previousData = root.feedForward(previousData.getLastTransition(),this,debug,previousData.getLastElement(),new ArrayList<>());
+            }
+
+        }
+
+
+        if(previousData.getInternalCode()<0){
+            Console.printlnInfo("FDA",Console.ANSI_RED+"Internal code: "+previousData.getInternalCode());
+        }
+        return previousData.getInternalCode();
 
 
     }
