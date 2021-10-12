@@ -1,20 +1,21 @@
 package FDA;
 
+import Common.ErrorHandler;
 import Tools.Console;
+import Tools.CharacterIterator;
 import Tools.FileIterator;
 
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class FDA<T>{
     private State<T> root;
 
     private boolean debug = false;
-    private FileIterator iterator;
+    private FileIterator<T> iterator;
     private FDAData<T>previousData;
-
+    private boolean continueOnError = true;
     public abstract void onReadSequence(FinalState<T>finalState, List<T> readSequence);
     public State<T> getRoot() {
         return root;
@@ -35,56 +36,66 @@ public abstract class FDA<T>{
 
 
 
-    public void execute(FileIterator iterator){
+    public void execute(FileIterator<T> iterator){
         this.iterator = iterator;
         if(debug){
             Console.printLegend();
         }
         Console.printlnInfo("FDA","Executing");
-        do {
-            if(previousData==null){
-                previousData = root.feedForward(null,this,debug,null,new ArrayList<>());
-            }else{
-                previousData = root.feedForward(previousData.getLastTransition(),this,debug,previousData.getLastElement(),new ArrayList<>());
-            }
-
-        }while((iterator.hasNext()||!previousData.getLastTransition().isReadNext())&& previousData.getInternalCode()>0);
-        if(previousData.getInternalCode()<0){
-            Console.printlnInfo("FDA",Console.ANSI_RED+"Internal code: "+previousData.getInternalCode());
-        }else{
-            Console.printlnInfo("FDA",Console.ANSI_GREEN+"Internal code: "+previousData.getInternalCode());
-        }
-
-
-
+        do{}while(executeNext());
     }
-    public int executeNext(){
-
-
-
+    public boolean executeNext(){
         if(previousData==null){
-            previousData = root.feedForward(null,this,debug,null,new ArrayList<>());
+            if(iterator.hasNext()){
+                previousData = root.feedForward(this,null,new ArrayList<>(),null,debug);
+            }else{
+                return false;
+            }
         }else{
             if((iterator.hasNext()||!previousData.getLastTransition().isReadNext())&& previousData.getInternalCode()>0){
-                previousData = root.feedForward(previousData.getLastTransition(),this,debug,previousData.getLastElement(),new ArrayList<>());
+                previousData = root.feedForward(this,previousData.getLastTransition(),new ArrayList<>(),previousData.getLastElement(),debug);
+            }else{
+                return false;
             }
 
         }
-
-
-        if(previousData.getInternalCode()<0){
-            Console.printlnInfo("FDA",Console.ANSI_RED+"Internal code: "+previousData.getInternalCode());
-        }
-        return previousData.getInternalCode();
+        return true;
 
 
     }
-
-    public FileIterator getIterator() {
+    protected boolean onError(FDAException exception){
+        printOnFinish(debug,false,iterator.getCurrentElement().toString());
+        ErrorHandler.showLexicError(debug,exception.getMessage(),iterator.getCurrentElement().toString(),getIterator().getColumn(),getIterator().getLine(),exception.getErrorCode());
+        if(continueOnError){
+            getIterator().skipLine();
+            return true;
+        }else{
+            return false;
+        }
+    }
+    protected void printOnFinish(boolean debug, boolean valid, String value){
+        if(debug){
+            if(valid){
+                Console.print(Console.ANSI_GREEN+"VALID\n");
+            }else{
+                ErrorHandler.printCharacter(true,value);
+                Console.print(Console.ANSI_RED+"ERROR\n");
+            }
+        }
+    }
+    public FileIterator<T> getIterator() {
         return iterator;
     }
 
-    public void setIterator(FileIterator iterator) {
+    public void setIterator(FileIterator<T> iterator) {
         this.iterator = iterator;
+    }
+
+    public boolean isContinueOnError() {
+        return continueOnError;
+    }
+
+    public void setContinueOnError(boolean continueOnError) {
+        this.continueOnError = continueOnError;
     }
 }

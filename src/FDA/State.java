@@ -1,9 +1,7 @@
 package FDA;
 
-import Common.ErrorHandler;
+
 import Tools.Console;
-import Tools.FileIterator;
-import jdk.swing.interop.SwingInterOpUtils;
 
 
 import java.util.*;
@@ -77,13 +75,13 @@ public class State <T>{
                 '}';
     }
 
-    protected FDAData<T> feedForward(Transition<T>transition, FDA<T>fda, boolean debug, T prev, List<T>sequence){
+    protected FDAData<T> feedForward(FDA<T>fda,Transition<T>transition,List<T>sequence ,T prev, boolean debug){
         //Check first if current node is final
         if(this instanceof FinalState){
             if(prev!=null){
                 printPath(debug, prev.toString(), true, !transition.isReadNext(), transition.isWrite());
             }
-            if(debug)Console.print(Console.ANSI_GREEN+" VALID \n");
+            fda.printOnFinish(debug,true,prev.toString());
 
             fda.onReadSequence((FinalState<T>) this,sequence);
 
@@ -107,7 +105,8 @@ public class State <T>{
             if(fda.getIterator().hasNext()){
                 character = (T)fda.getIterator().next();//read next character
             }else{
-                Console.print(Console.ANSI_RED+"REACH END OF ITERATOR BUT NOT REACHED FINAL STATE\n");
+                FDAException exception = new FDAException(-1,"REACH END OF ITERATOR BUT NOT REACHED FINAL STATE");
+                fda.onError(exception);
                 return new FDAData<T>(-1,transition,this,prev);
             }
 
@@ -131,9 +130,8 @@ public class State <T>{
         }
 
         if(nextState == null){//If there is no available transition
-            //Console.print(Console.ANSI_RED+"NOT AVAILABLE TRANSITION FOR ELEMENT "+Console.ANSI_PURPLE+"["+character+"]\n");
-            ErrorHandler.showLexicError(debug,noTransitionError,character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),-2);
-            fda.getIterator().skipLine();
+            FDAException exception = new FDAException(-2,noTransitionError);
+            fda.onError(exception);
             return new FDAData<T>(1,transition,this,character);
         }
 
@@ -144,27 +142,19 @@ public class State <T>{
             try{
                 transitionUsed.callActions(character,sequence,fda.getIterator());
             } catch (FDAException e) {
-
-                ErrorHandler.showLexicError(debug,e.getMessage(),character.toString(),fda.getIterator().getColumn(),fda.getIterator().getLine(),e.getErrorCode());
-                fda.getIterator().skipLine();
+                fda.onError(e);
                 return new FDAData<T>(1,transition,this,character);
             }
 
         }
         // go to next  state of transition
-        return nextState.feedForward(transitionUsed,fda, debug,character,sequence);
-
-
-
+        return nextState.feedForward(fda,transitionUsed,sequence, character,debug);
     }
 
-    public void printPath(boolean debug,String prev,boolean isFinal,boolean ignoreRead,boolean write){
-
-
+    private void printPath(boolean debug,String prev,boolean isFinal,boolean ignoreRead,boolean write){
         if(!debug) return;
         String modifiers = "";
         prev = prev.replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
-
 
         if(ignoreRead){
             modifiers+=Console.ANSI_BLUE+"[IGNORE READ]";

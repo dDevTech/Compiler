@@ -2,10 +2,8 @@ package FDATest;
 
 import FDA.FDA;
 import FDA.*;
-import Tools.Console;
-import Tools.FileIterator;
+import Tools.CharacterIterator;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class FDATest {
@@ -13,7 +11,7 @@ public class FDATest {
     static String analyze;
     static int sizeCounter = 0;
     public static void main(String[]args){
-        FileIterator it = new FileIterator("files/javascript.txt");
+        CharacterIterator it = new CharacterIterator("files/javascript.txt");
 
        // Scanner sc = new Scanner(System.in);
         //analyze = sc.nextLine();
@@ -70,12 +68,10 @@ public class FDATest {
         initial.addTransition('\\',eof,false,false);
 
         initial.addTransitionFunction(TransitionFunction::isDelimiter,initial,false,false);
-        Console.printLegend();
+        //Console.printLegend();
         fda.setRoot(initial);
         fda.setIterator(it);
-        while(fda.executeNext()>0){
-
-        }
+        fda.execute(fda.getIterator());
 
 
 

@@ -27,11 +27,24 @@ public class Console {
     public static final String PURPLE_BRIGHT = "\033[0;95m"; // PURPLE
     public static final String CYAN_BRIGHT = "\033[0;96m";   // CYAN
     public static final String WHITE_BRIGHT = "\033[0;97m";  // WHITE
+
+
+    public static final String BLACK_BOLD = "\033[1;30m";  // BLACK
+    public static final String RED_BOLD = "\033[1;31m";    // RED
+    public static final String GREEN_BOLD = "\033[1;32m";  // GREEN
+    public static final String YELLOW_BOLD = "\033[1;33m"; // YELLOW
+    public static final String BLUE_BOLD = "\033[1;34m";   // BLUE
+    public static final String PURPLE_BOLD = "\033[1;35m"; // PURPLE
+    public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
+    public static final String WHITE_BOLD = "\033[1;37m";  // WHITE
     public static void print(String prefix,String content){
         System.out.print(getCurrentTimeStamp()+"["+prefix+"]  "+content);
     }
     public static void printInfo(String prefix,String content){
-        System.out.print(Console.ANSI_YELLOW+"["+getCurrentTimeStamp()+"]  "+ANSI_CYAN+"["+prefix+"]  "+ANSI_RESET+content+ANSI_RESET);
+        System.out.print(Console.ANSI_YELLOW+"["+getCurrentTimeStamp()+"]  "+BLUE_BOLD+"["+prefix+"]  "+ANSI_RESET+content+ANSI_RESET);
+    }
+    public static void printError(String prefix,String content){
+        System.out.print(Console.ANSI_YELLOW+"["+getCurrentTimeStamp()+"]  "+RED_BOLD+"["+prefix+"]  "+ANSI_RESET+content+ANSI_RESET);
     }
     public static void print(String content){
         System.out.print(ANSI_RESET+content+ANSI_RESET);

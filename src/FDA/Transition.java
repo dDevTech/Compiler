@@ -1,9 +1,8 @@
 package FDA;
 
-import Common.ErrorHandler;
+import Tools.CharacterIterator;
 import Tools.FileIterator;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,7 +50,7 @@ public class Transition<T>{
     public void setReadNext(boolean readNext) {
         this.readNext = readNext;
     }
-    protected void callActions(T element, List<T>elements, FileIterator iterator) throws FDAException{
+    protected void callActions(T element, List<T>elements, FileIterator<T> iterator) throws FDAException{
         Iterator<SemanticAction<T>>actionsIt =actions.stream().iterator();
 
         while(actionsIt.hasNext()){
