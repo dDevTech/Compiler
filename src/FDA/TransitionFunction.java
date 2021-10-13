@@ -55,4 +55,7 @@ public class TransitionFunction<T>{
     public static boolean isDelimiter(Character character){
         return Character.isWhitespace(character);
     }
+    public static boolean isEscape(Character character){
+        return character == 'n'||character == 'r'||character == '\"'||character == '\\';
+    }
 }

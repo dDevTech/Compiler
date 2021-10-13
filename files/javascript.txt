@@ -1,12 +1,11 @@
-hola me llamo diego := diego + d13:=a15a
-asdad
-adsadaaa  sajdajajaj
-:=:=
-++++
-:::
-1ssasd
-======
-dasdadahsdj
-adhahdaha
-+*
-**
+if(x==5){
+ return systmeout;
+ else{
+  c++;
+ }
+}
+/* metodo para detectar errores
+bonitos
+*/
+a25=264;
+if(a25!="hola\"entonces\n"/* se hace la comprobacion */

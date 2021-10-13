@@ -7,4 +7,5 @@ public class Tools {
     public static String characterListToString(List<Character> chars){
         return chars.stream().map(String::valueOf).collect(Collectors.joining());
     }
+
 }

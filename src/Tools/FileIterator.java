@@ -1,6 +1,7 @@
 package Tools;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public abstract class FileIterator<T> implements Iterator<T> {
      int column = 0;

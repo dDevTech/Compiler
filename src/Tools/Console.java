@@ -67,4 +67,10 @@ public class Console {
         Console.print(Console.ANSI_YELLOW+"<<NODE>> : "+Console.ANSI_WHITE +"Final state reached\n");
         Console.print(Console.ANSI_BLUE+"[IGNORE READ] : "+Console.ANSI_WHITE +"transited available to node but ignored and next character will be previous character\n");
     }
+    public static void printCharacter(boolean debug,String character){
+        if(debug){
+            character = character.replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
+            Console.print(Console.ANSI_CYAN+"("+character+") ");
+        }
+    }
 }

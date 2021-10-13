@@ -49,10 +49,13 @@ public class CharacterIterator extends FileIterator<Character> {
         }
 
     }
-    public void skipLine(){
+    public void skipLine() {
+
         sc.nextLine();
         column=0;
         line++;
+
+
     }
 
 

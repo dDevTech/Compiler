@@ -8,6 +8,7 @@ import Tools.FileIterator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public abstract class FDA<T>{
     private State<T> root;
@@ -65,10 +66,15 @@ public abstract class FDA<T>{
     }
     protected boolean onError(FDAException exception){
         printOnFinish(debug,false,iterator.getCurrentElement().toString());
-        ErrorHandler.showLexicError(debug,exception.getMessage(),iterator.getCurrentElement().toString(),getIterator().getColumn(),getIterator().getLine(),exception.getErrorCode());
+        ErrorHandler.showLexicError(getIterator(),exception);
         if(continueOnError){
-            getIterator().skipLine();
-            return true;
+            try {
+                getIterator().skipLine();
+                return true;
+            }catch(Exception e){
+                return false;
+            }
+
         }else{
             return false;
         }
@@ -78,7 +84,7 @@ public abstract class FDA<T>{
             if(valid){
                 Console.print(Console.ANSI_GREEN+"VALID\n");
             }else{
-                ErrorHandler.printCharacter(true,value);
+                Console.printCharacter(true,value);
                 Console.print(Console.ANSI_RED+"ERROR\n");
             }
         }
