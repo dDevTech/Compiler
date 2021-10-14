@@ -2,11 +2,21 @@ package Analyzer.Lexical;
 
 import FDA.*;
 import Tools.CharacterIterator;
-
+import Tools.FileRead;
+import Tools.Tools;
+import Tools.FileWrite;
+import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
 
 public class LexicalAnalyzer {
+    HashMap<String,Integer>reservedWords = new HashMap<>();
+    PrintWriter tokenWriter;
+
     public void setup(){
+        FileWrite write = new FileWrite("files/output");
+        tokenWriter = write.writer();
+        readReserved();
         CharacterIterator it = new CharacterIterator("files/javascript.txt"); //iterador que lee el archivo
         FDA<Character> fda = new FDA<Character>() {
             @Override
@@ -23,50 +33,98 @@ public class LexicalAnalyzer {
         root.addTransition('-',dif,false,true);
 
         FinalState<Character>difeq = new FinalState<Character>("-=");
-        dif.addTransition('=',difeq,false,true);
-        FinalState<Character>difdif = new FinalState<Character>("--");
-        dif.addTransition('-',difdif,false,true);
+        Transition<Character> transition2 = dif.addTransition('=',difeq,false,true);
+        transition2.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(14,null);
+            }
+        });
+       // FinalState<Character>difdif = new FinalState<Character>("--");
+        //dif.addTransition('-',difdif,false,true);
         FinalState<Character>difOnly = new FinalState<Character>("-");
-        dif.addOtherElementTransitionFunction(difOnly,true,false);
+        Transition<Character> transition3= dif.addOtherElementTransitionFunction(difOnly,true,false);
+        transition3.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(23,null);
+            }
+        });
 
-        State<Character>sum = new State<Character>("sumChar");
-        root.addTransition('+',sum,false,true);
-        FinalState<Character>sumeq = new FinalState<Character>("+=");
-        sum.addTransition('=',sumeq,false,true);
-        FinalState<Character>sumsum = new FinalState<Character>("++");
-        sum.addTransition('+',sumsum,false,true);
-        FinalState<Character>sumOnly = new FinalState<Character>("+");
-        sum.addOtherElementTransitionFunction(sumOnly,true,false);
+        FinalState<Character>sum = new FinalState<Character>("+");
+        Transition<Character> transition4=root.addTransition('+',sum,false,true);
+        transition4.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(22,null);
+            }
+        });
+       // FinalState<Character>sumeq = new FinalState<Character>("+=");
+       // sum.addTransition('=',sumeq,false,true);
+       // FinalState<Character>sumsum = new FinalState<Character>("++");
+        //sum.addTransition('+',sumsum,false,true);
+       // FinalState<Character>sumOnly = new FinalState<Character>("+");
+        //sum.addOtherElementTransitionFunction(sumOnly,true,false);
 
 
         //OPERADORES LOGICOS
         State<Character>and = new State<Character>("and");
         root.addTransition('&',and,false,true);
         FinalState<Character>andand = new FinalState<Character>("&&");
-        and.addTransition('&',andand,false,true);
+        Transition<Character>transition5=and.addTransition('&',andand,false,true);
+        transition5.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(24,null);
+            }
+        });
 
         State<Character>or = new State<Character>("or");
         root.addTransition('|',or,false,true);
         FinalState<Character>oror = new FinalState<Character>("||");
-        or.addTransition('|',oror,false,true);
+        Transition<Character>transition6=or.addTransition('|',oror,false,true);
+        transition6.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(25,null);
+            }
+        });
 
-        FinalState<Character>not = new FinalState<Character>("not");
-        root.addTransition('!',not,false,true);
+      //  FinalState<Character>not = new FinalState<Character>("not");
+       // root.addTransition('!',not,false,true);
 
 
         //OPERADORES RELACIONALES
         State<Character>equals = new State<Character>("equals");
         root.addTransition('=',equals,false,true);
         FinalState<Character>equalsequals = new FinalState<Character>("==");
+
         FinalState<Character>assignment = new FinalState<Character>("=");
-        equals.addOtherElementTransitionFunction(assignment,true,false);
-        equals.addTransition('=',equalsequals,false,true);
+        Transition<Character>transition8=equals.addOtherElementTransitionFunction(assignment,true,false);
+        transition8.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(15,null);
+            }
+        });
+        Transition<Character>transition7=equals.addTransition('=',equalsequals,false,true);
+        transition7.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(27,null);
+            }
+        });
 
         State<Character>different = new State<Character>("notequals");
         root.addTransition('!',different,false,true);
         FinalState<Character>differentdifferent = new FinalState<Character>("!=");
-        different.addTransition('=',differentdifferent,false,true);
-
+        Transition<Character>transition9 = different.addTransition('=',differentdifferent,false,true);
+        transition9.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                generateToken(26,null);
+            }
+        });
 
         //FIN ARCHIVO
         FinalState<Character>eof = new FinalState<Character>("eof"); //fin de archivo
@@ -77,20 +135,35 @@ public class LexicalAnalyzer {
         State<Character>comentario1 = new State<Character>("/");
         State<Character>comentario2 = new State<Character>("comment");
         State<Character>comentario3 = new State<Character>("/**/");
-        root.addTransition('/',comentario1,false,true);
-        comentario1.addTransition('*',comentario2,false,true);
-        comentario2.addTransition('*',comentario3,false,true);
-        comentario3.addOtherElementTransitionFunction(comentario2,false,true);
-        comentario2.addOtherElementTransitionFunction(comentario2,false,true);
-        comentario3.addTransition('/',root,false,true);
+        root.addTransition('/',comentario1,false,false);
+        comentario1.addTransition('*',comentario2,false,false);
+        comentario2.addTransition('*',comentario3,false,false);
+        comentario3.addTransition('*',comentario3,false,false);
+        comentario3.addOtherElementTransitionFunction(comentario2,false,false);
+        comentario2.addOtherElementTransitionFunction(comentario2,false,false);
+        comentario3.addTransition('/',root,false,false);
 
 
-        //VARIABLES
+        //VARIABLES - PALABRAS RESERVADAS
         State<Character>letterDigit = new State<Character>("letterDigit");
         FinalState<Character>variable = new FinalState<Character>("variable/reserved");
         root.addTransitionFunction(TransitionFunction::isLetter,letterDigit,false,true);
         letterDigit.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
-        letterDigit.addOtherElementTransitionFunction(variable,true,false);
+        Transition<Character> transition =letterDigit.addOtherElementTransitionFunction(variable,true,false);
+        transition.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                String s = Tools.characterListToString(sequence);
+
+                if(reservedWords.containsKey(s)){
+                    generateToken(reservedWords.get(s),null);
+                }else{
+                    generateToken(13,s);//mmal
+                }
+
+            }
+        });
+
 
         //STRINGS
         State<Character>stringStart = new State<Character>("str");
@@ -127,5 +200,25 @@ public class LexicalAnalyzer {
         fda.setIterator(it);
         fda.setContinueOnError(false);
         fda.execute(it);
+    }
+    public void readReserved(){
+        FileRead read= new FileRead("files/reservedWords");
+        String line = "";
+        while((line=read.readNextLine())!=null){
+            System.out.println(line);
+            String[]keyValue = line.split("=");
+            reservedWords.put(keyValue[0].trim(),Integer.parseInt(keyValue[1].trim()));
+        }
+
+
+    }
+    public void generateToken(int id,Object value){
+
+        if(value==null){
+            tokenWriter.println("< "+id+" ,> ");
+        }else{
+            tokenWriter.println("< "+id+" , "+value+"> ");
+        }
+        tokenWriter.flush();
     }
 }

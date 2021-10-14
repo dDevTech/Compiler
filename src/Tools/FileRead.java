@@ -11,7 +11,7 @@ public class FileRead {
     public FileRead(){}
     public boolean setup(String path){
         File f = new File(path);
-        if(!f.exists()) return false;
+
         try {
             reader= new BufferedReader(new FileReader(f));
 

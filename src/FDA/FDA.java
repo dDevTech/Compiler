@@ -2,17 +2,16 @@ package FDA;
 
 import Common.ErrorHandler;
 import Tools.Console;
-import Tools.CharacterIterator;
+
 import Tools.FileIterator;
 
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
+
 
 public abstract class FDA<T>{
     private State<T> root;
-
     private boolean debug = false;
     private FileIterator<T> iterator;
     private FDAData<T>previousData;

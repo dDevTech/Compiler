@@ -47,11 +47,11 @@ public class State<T> {
 
     }
 
-    public void addOtherElementTransitionFunction(State<T> toTransit, boolean ignoreRead, boolean write) {
+    public Transition<T> addOtherElementTransitionFunction(State<T> toTransit, boolean ignoreRead, boolean write) {
         checkAddTransition(toTransit, ignoreRead);
 
         other = new Transition<T>(this::otherFunction, toTransit, ignoreRead, write);
-
+        return other;
     }
 
     private void checkAddTransition(State<T> toTransit, boolean ignoreRead) {
