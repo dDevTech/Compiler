@@ -1,11 +1,18 @@
-if(x==5){
- return systmeout;
- else{
-  c++;
- }
+let string texto;
+function alert (string msg)
+{
+	print ("Mensaje introducido:");
+	print (msg);
 }
-/* metodo para detectar errores
-bonitos
-*/
-a25=264;
-if(a25!="hola\"entonces\n"/* se hace la comprobacion */
+function pideTexto ()
+{
+	print ("Introduce un texto corto");
+	input (texto);
+}
+pideTexto();
+let  string  textoAux;textoAux = texto;
+alert
+ (
+ textoAux
+ )
+ ;
