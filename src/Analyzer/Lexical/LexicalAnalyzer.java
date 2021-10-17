@@ -9,8 +9,9 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 
+import Tools.Console;
 public class LexicalAnalyzer {
-    HashMap<String,Integer>reservedWords = new HashMap<>();
+    HashMap<String,String>reservedWords = new HashMap<>();
     PrintWriter tokenWriter;
 
     public void setup(){
@@ -38,7 +39,7 @@ public class LexicalAnalyzer {
         transition2.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(14,null);
+                generateToken("menosigual",null);
             }
         });
        // FinalState<Character>difdif = new FinalState<Character>("--");
@@ -48,7 +49,7 @@ public class LexicalAnalyzer {
         transition3.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(23,null);
+                generateToken("resta",null);
             }
         });
 
@@ -57,7 +58,7 @@ public class LexicalAnalyzer {
         transition4.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(22,null);
+                generateToken("suma",null);
             }
         });
        // FinalState<Character>sumeq = new FinalState<Character>("+=");
@@ -76,7 +77,7 @@ public class LexicalAnalyzer {
         transition5.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(24,null);
+                generateToken("and",null);
             }
         });
 
@@ -87,7 +88,7 @@ public class LexicalAnalyzer {
         transition6.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(25,null);
+                generateToken("or",null);
             }
         });
 
@@ -105,14 +106,14 @@ public class LexicalAnalyzer {
         transition8.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(15,null);
+                generateToken("asig",null);
             }
         });
         Transition<Character>transition7=equals.addTransition('=',equalsequals,false,true);
         transition7.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(27,null);
+                generateToken("igual",null);
             }
         });
 
@@ -123,7 +124,7 @@ public class LexicalAnalyzer {
         transition9.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(26,null);
+                generateToken("distinto",null);
             }
         });
 
@@ -134,7 +135,7 @@ public class LexicalAnalyzer {
         transition10.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(30,null);
+                generateToken("eof",null);
             }
         });
 
@@ -153,9 +154,12 @@ public class LexicalAnalyzer {
 
         //VARIABLES - PALABRAS RESERVADAS
         State<Character>letterDigit = new State<Character>("letterDigit");
+        State<Character>guion = new State<Character>("_");
         FinalState<Character>variable = new FinalState<Character>("variable/reserved");
         root.addTransitionFunction(TransitionFunction::isLetter,letterDigit,false,true);
         letterDigit.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
+        letterDigit.addTransition('_',guion,false,true);
+        guion.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
         Transition<Character> transition =letterDigit.addOtherElementTransitionFunction(variable,true,false);
         transition.addSemanticAction(new SemanticAction<Character>() {
             @Override
@@ -167,10 +171,10 @@ public class LexicalAnalyzer {
                 }else{
                     int id;
                     if((id=table.add(s))!=-1){
-                        generateToken(13,id);
+                        generateToken("id",id);
                     }else{
-                        generateToken(13,table.get(s));
-                        System.out.println(s+"Already created");
+                        generateToken("id",table.get(s));
+                        Console.print(Console.ANSI_RED+" Already created variable ("+s+") ");
                     }
 
                 }
@@ -183,8 +187,8 @@ public class LexicalAnalyzer {
         State<Character>stringStart = new State<Character>("str");
         State<Character>escape = new State<Character>("escape");
         FinalState<Character>stringEnd = new FinalState<Character>("string");
-        root.addTransition('\"',stringStart,false,true);
-        Transition<Character>transitionString = stringStart.addTransition('\"',stringEnd,false,true);
+        root.addTransition('\"',stringStart,false,false);
+        Transition<Character>transitionString = stringStart.addTransition('\"',stringEnd,false,false);
         stringStart.addTransition('\\',escape,false,true);
         escape.addTransitionFunction(TransitionFunction::isEscape,stringStart,false,true);
         stringStart.addOtherElementTransitionFunction(stringStart,false,true);
@@ -192,7 +196,7 @@ public class LexicalAnalyzer {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
                 String s = Tools.characterListToString(sequence);
-                generateToken(12,s);
+                generateToken("cadena",s);
             }
         });
 
@@ -207,7 +211,7 @@ public class LexicalAnalyzer {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
                 int a = Integer.parseInt(Tools.characterListToString(sequence));
-                generateToken(11,a);
+                generateToken("constanteEntera",a);
             }
         });
         //PARENTESIS Y LLAVES FIN LINEA
@@ -216,7 +220,7 @@ public class LexicalAnalyzer {
         transition11.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(18,null);
+                generateToken("abrePar",null);
             }
         });
 
@@ -225,7 +229,7 @@ public class LexicalAnalyzer {
         transition12.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(19,null);
+                generateToken("cierraPar",null);
             }
         });
         FinalState<Character>llav1 = new FinalState<Character>("{");
@@ -233,7 +237,7 @@ public class LexicalAnalyzer {
         transition13.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(20,null);
+                generateToken("abreLlave",null);
             }
         });
         FinalState<Character>llav2 = new FinalState<Character>("}");
@@ -241,7 +245,7 @@ public class LexicalAnalyzer {
         transition14.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(21,null);
+                generateToken("cierraLlave",null);
             }
         });
 
@@ -250,7 +254,7 @@ public class LexicalAnalyzer {
         transition15.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(17,null);
+                generateToken("puntoycoma",null);
             }
         });
 
@@ -259,33 +263,42 @@ public class LexicalAnalyzer {
         transition16.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                generateToken(16,null);
+                generateToken("coma",null);
             }
         });
+
         fda.setRoot(root);
         fda.setDebug(true);
         fda.setIterator(it);
         fda.setContinueOnError(false);
         fda.execute(it);
         tokenWriter.close();
+        it.close();
+        table.toFile();
+
     }
-    public void readReserved(){
+    private void readReserved(){
         FileRead read= new FileRead("files/reservedWords");
         String line = "";
         while((line=read.readNextLine())!=null){
-            System.out.println(line);
+
             String[]keyValue = line.split("=");
-            reservedWords.put(keyValue[0].trim(),Integer.parseInt(keyValue[1].trim()));
+            reservedWords.put(keyValue[0].trim(),keyValue[1].trim());
         }
-
-
+        read.close();
+        Console.printlnInfo("RESERVED WORDS",Console.PURPLE_BOLD+reservedWords);
     }
-    public void generateToken(int id,Object value){
 
+    private void generateToken(Object id,Object value){
         if(value==null){
             tokenWriter.println("< "+id+" ,> ");
         }else{
-            tokenWriter.println("< "+id+" , "+value+"> ");
+            if(value instanceof  String){
+                tokenWriter.println("< "+id+" , \""+value+"\"> ");
+            }else{
+                tokenWriter.println("< "+id+" , "+value+"> ");
+            }
+
         }
         tokenWriter.flush();
     }
