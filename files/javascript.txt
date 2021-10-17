@@ -1,18 +1,13 @@
-let string texto;
-function alert (string msg)
-{
-	print ("Mensaje introducido:");
-	print (msg);
-}
-function pideTexto ()
-{
-	print ("Introduce un texto corto");
-	input (texto);
-}
-pideTexto();
-let  string  textoAux;textoAux = texto;
-alert
- (
- textoAux
- )
- ;
+let int a;
+let   int  b;
+let boolean bbb;
+a = 3;
+b=a					    		 	 	 	 	 	 	 	 	 	 	 	 	 	 	 													;
+let boolean c;
+
+c = a == b;
+
+if (c) b = 3333;
+a = a - b;
+print (a) ;
+print(b);

@@ -19,4 +19,5 @@ public abstract class FileIterator<T> implements Iterator<T> {
     public T getCurrentElement() {
         return current;
     }
+    public abstract void close();
 }

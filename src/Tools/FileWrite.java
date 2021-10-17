@@ -14,7 +14,7 @@ public class FileWrite {
     public boolean setup(String path){
         try {
             writer = new PrintWriter(new FileWriter(path));
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }

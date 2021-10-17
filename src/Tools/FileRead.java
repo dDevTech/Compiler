@@ -14,7 +14,6 @@ public class FileRead {
 
         try {
             reader= new BufferedReader(new FileReader(f));
-
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return false;
@@ -25,11 +24,18 @@ public class FileRead {
         if(reader!=null){
             try {
                 return reader.readLine();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
         }
         return null;
+    }
+    public void close(){
+        try {
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

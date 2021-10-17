@@ -58,6 +58,10 @@ public class CharacterIterator extends FileIterator<Character> {
 
     }
 
+    @Override
+    public void close() {
+        sc.close();
+    }
 
 
 }
