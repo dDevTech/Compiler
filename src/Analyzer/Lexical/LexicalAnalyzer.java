@@ -158,9 +158,10 @@ public class LexicalAnalyzer {
         FinalState<Character>variable = new FinalState<Character>("variable/reserved");
         root.addTransitionFunction(TransitionFunction::isLetter,letterDigit,false,true);
         letterDigit.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
-        letterDigit.addTransition('_',guion,false,true);
-        guion.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
+        letterDigit.addTransition('_',letterDigit ,false,true);
+
         Transition<Character> transition =letterDigit.addOtherElementTransitionFunction(variable,true,false);
+
         transition.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
@@ -181,6 +182,7 @@ public class LexicalAnalyzer {
 
             }
         });
+
 
 
         //STRINGS
