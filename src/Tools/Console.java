@@ -69,8 +69,11 @@ public class Console {
     }
     public static void printCharacter(boolean debug,String character){
         if(debug){
-            character = character.replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
+            character = avoidScapes(character);
             Console.print(Console.ANSI_CYAN+"("+character+") ");
         }
+    }
+    public static String  avoidScapes(String character){
+        return character.replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
     }
 }

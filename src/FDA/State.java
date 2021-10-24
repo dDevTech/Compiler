@@ -141,7 +141,7 @@ public class State<T> {
 
             boolean notfinish = fda.onError(exception);
             int internalCode = notfinish?1:-1;
-            return new FDAData<T>(internalCode, transition, this, fda.getIterator().getCurrentElement());
+            return new FDAData<T>(internalCode, null, this, fda.getIterator().getCurrentElement());
         }
 
         if (transitionUsed != null) {//If there is transition call semantic actions of transition

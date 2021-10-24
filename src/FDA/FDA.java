@@ -69,6 +69,7 @@ public abstract class FDA<T>{
         if(continueOnError){
             try {
                 getIterator().skipLine();
+                Console.print(Console.ANSI_RED+"[Skipped line]");
                 return true;
             }catch(Exception e){
                 return false;

@@ -5,7 +5,7 @@ import java.util.NoSuchElementException;
 
 public abstract class FileIterator<T> implements Iterator<T> {
      int column = 0;
-     int line = 0;
+     int line = 1;
      T current;
     public abstract void skipLine();
     public int getColumn() {

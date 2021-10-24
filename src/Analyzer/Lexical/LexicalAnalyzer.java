@@ -154,7 +154,7 @@ public class LexicalAnalyzer {
 
         //VARIABLES - PALABRAS RESERVADAS
         State<Character>letterDigit = new State<Character>("letterDigit");
-        State<Character>guion = new State<Character>("_");
+
         FinalState<Character>variable = new FinalState<Character>("variable/reserved");
         root.addTransitionFunction(TransitionFunction::isLetter,letterDigit,false,true);
         letterDigit.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
@@ -184,7 +184,6 @@ public class LexicalAnalyzer {
         });
 
 
-
         //STRINGS
         State<Character>stringStart = new State<Character>("str");
         State<Character>escape = new State<Character>("escape");
@@ -197,8 +196,11 @@ public class LexicalAnalyzer {
         transitionString.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                String s = Tools.characterListToString(sequence);
-                generateToken("cadena",s);
+                String a = Tools.characterListToString(sequence);
+                if(a.length()>64){
+                    throw new FDAException(-4,"Max string length is 64");
+                }
+                generateToken("string",a);
             }
         });
 
@@ -213,6 +215,9 @@ public class LexicalAnalyzer {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
                 int a = Integer.parseInt(Tools.characterListToString(sequence));
+                if(a> 32767){
+                    throw new FDAException(-3,"Max integer size is 32767");
+                }
                 generateToken("constanteEntera",a);
             }
         });
@@ -272,7 +277,7 @@ public class LexicalAnalyzer {
         fda.setRoot(root);
         fda.setDebug(true);
         fda.setIterator(it);
-        fda.setContinueOnError(false);
+        fda.setContinueOnError(true);
         fda.execute(it);
         tokenWriter.close();
         it.close();
