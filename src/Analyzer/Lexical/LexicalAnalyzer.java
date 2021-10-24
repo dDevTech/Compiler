@@ -200,7 +200,7 @@ public class LexicalAnalyzer {
                 if(a.length()>64){
                     throw new FDAException(-4,"Max string length is 64");
                 }
-                generateToken("string",a);
+                generateToken("cadena",a);
             }
         });
 
