@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Tools {
-    public static String characterListToString(List<Character> chars){
+    public static <T>String characterListToString(List<T> chars){
         return chars.stream().map(String::valueOf).collect(Collectors.joining());
     }
 

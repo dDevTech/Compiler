@@ -197,10 +197,12 @@ public class LexicalAnalyzer {
         transitionString.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                String a = Tools.characterListToString(sequence);
-                if(a.length()>64){
+
+                if(sequence.size()>64){
                     throw new FDAException(-4,"Max string length is 64");
                 }
+                String a = Tools.characterListToString(sequence);
+
                 generateToken("cadena",a);
             }
         });
