@@ -13,14 +13,15 @@ import Tools.Console;
 public class LexicalAnalyzer {
     HashMap<String,String>reservedWords = new HashMap<>();
     PrintWriter tokenWriter;
-
+    FDA<Character> fda;
+    int num;
     public void setup(){
         SymbolTable table = new SymbolTable();
         FileWrite write = new FileWrite("files/output.txt");
         tokenWriter = write.writer();
         readReserved();
         CharacterIterator it = new CharacterIterator("files/javascript.txt"); //iterador que lee el archivo
-        FDA<Character> fda = new FDA<Character>() {
+        fda= new FDA<Character>() {
             @Override
             public void onReadSequence(FinalState<Character> finalState, List<Character> readSequence) {
 
@@ -208,17 +209,33 @@ public class LexicalAnalyzer {
         //INTEGERS
         State<Character>integerStart = new State<Character>("int");
         FinalState<Character>integerEnd = new FinalState<Character>("integer");
-        root.addTransitionFunction(TransitionFunction::isDigit,integerStart,false,true);
-        integerStart.addTransitionFunction(TransitionFunction::isDigit,integerStart,false,true);
+        Transition<Character>startInt=root.addTransitionFunction(TransitionFunction::isDigit,integerStart,false,true);
+        startInt.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                num=0;
+                num = num*10 + Integer.parseInt(Character.toString(element));
+            }
+        });
+        Transition<Character>integers=integerStart.addTransitionFunction(TransitionFunction::isDigit,integerStart,false,true);
+        integers.addSemanticAction(new SemanticAction<Character>() {
+            @Override
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+                num = num*10 + Integer.parseInt(Character.toString(element));
+                if(num> 32767){
+                    throw new FDAException(-3,"Max integer size is 32767");
+                }
+            }
+        });
         Transition<Character>integersTransition=integerStart.addOtherElementTransitionFunction(integerEnd,true,false);
         integersTransition.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
-                int a = Integer.parseInt(Tools.characterListToString(sequence));
-                if(a> 32767){
+                if(num> 32767){
                     throw new FDAException(-3,"Max integer size is 32767");
                 }
-                generateToken("constanteEntera",a);
+                generateToken("constanteEntera",num);
+                num=0;
             }
         });
         //PARENTESIS Y LLAVES FIN LINEA
