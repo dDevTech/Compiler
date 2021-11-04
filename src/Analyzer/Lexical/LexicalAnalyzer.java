@@ -6,21 +6,26 @@ import Tools.FileRead;
 import Tools.Tools;
 import Tools.FileWrite;
 import java.io.PrintWriter;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import Tools.Console;
 public class LexicalAnalyzer {
+    private AbstractMap.SimpleEntry<Object,Object>token;
     HashMap<String,String>reservedWords = new HashMap<>();
     PrintWriter tokenWriter;
+    SymbolTable table;
+    CharacterIterator it;
     FDA<Character> fda;
     int num;
     public void setup(){
-        SymbolTable table = new SymbolTable();
+        table = new SymbolTable();
         FileWrite write = new FileWrite("files/output.txt");
         tokenWriter = write.writer();
         readReserved();
-        CharacterIterator it = new CharacterIterator("files/javascript.txt"); //iterador que lee el archivo
+        it = new CharacterIterator("files/javascript.txt"); //iterador que lee el archivo
         fda= new FDA<Character>() {
             @Override
             public void onReadSequence(FinalState<Character> finalState, List<Character> readSequence) {
@@ -176,7 +181,10 @@ public class LexicalAnalyzer {
                         generateToken("id",id);
                     }else{
                         generateToken("id",table.get(s));
-                        Console.print(Console.ANSI_RED+" Already created variable ("+s+") ");
+                        if(fda.isDebug()){
+                            Console.print(Console.ANSI_RED+" Already created variable ("+s+") ");
+                        }
+
                     }
 
                 }
@@ -296,12 +304,23 @@ public class LexicalAnalyzer {
         fda.setRoot(root);
         fda.setDebug(true);
         fda.setIterator(it);
-        fda.setContinueOnError(true);
-        fda.execute(it);
+        fda.setContinueOnError(false);
+
+
+
+    }
+    public void close(){
         tokenWriter.close();
         it.close();
         table.toFile();
+    }
+    public AbstractMap.SimpleEntry readToken(){
 
+        if(fda.executeNext()){
+            return token;
+        }else{
+            return null;
+        }
     }
     private void readReserved(){
         FileRead read= new FileRead("files/reservedWords");
@@ -318,11 +337,14 @@ public class LexicalAnalyzer {
     private void generateToken(Object id,Object value){
         if(value==null){
             tokenWriter.println("< "+id+" ,> ");
+            token = new AbstractMap.SimpleEntry<>(id,null);
         }else{
             if(value instanceof  String){
                 tokenWriter.println("< "+id+" , \""+value+"\"> ");
+                token = new AbstractMap.SimpleEntry<>(id,value);
             }else{
                 tokenWriter.println("< "+id+" , "+value+"> ");
+                token = new AbstractMap.SimpleEntry<>(id,value);
             }
 
         }
