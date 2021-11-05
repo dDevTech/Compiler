@@ -113,9 +113,10 @@ public class SintacticAnalyzer {
         K.addProductions(pK1);
 
         initialRule =S;
-
         print();
-        first(C);
+        HashSet<String>rules=new HashSet<>();
+        first(P);
+        System.out.println(rules);
 
 
     }
@@ -172,12 +173,12 @@ public class SintacticAnalyzer {
                 if(debug)spaces(increment.getInteger());
                 if(debug)Console.print(Console.YELLOW_BOLD +Y+ Console.ANSI_WHITE+"  USED: " + passedProductions + "\n");
                 boolean containsLambda= false;
-
-
+                if(!passedProductions.contains(Y)) {
+                    passedProductions.add(Y);
                     for (Object o : Y.getElements()) {
                         Set<String> set = new HashSet<>();
-                        if(debug)spaces(increment.getInteger());
-                        if(debug)Console.print(Console.PURPLE_BOLD + "=FIRST(" + Console.BLUE_BOLD+o+Console.PURPLE_BOLD+")\n");
+                        if (debug) spaces(increment.getInteger());
+                        if (debug) Console.print(Console.PURPLE_BOLD + "=FIRST(" + Console.BLUE_BOLD + o + Console.PURPLE_BOLD + ")\n");
 
                         increment.setInteger(increment.getInteger() + 1);
                         firstRecursive(increment, o, set, passedProductions);
@@ -191,15 +192,18 @@ public class SintacticAnalyzer {
                         }
 
                     }
-                    if(containsLambda){
-                        if(debug)spaces(increment.getInteger());
-                        if(debug)Console.print(Console.YELLOW_BOLD+"λ (all lambdas)"+"\n");
+                    if (containsLambda) {
+                        if (debug) spaces(increment.getInteger());
+                        if (debug) Console.print(Console.YELLOW_BOLD + "λ (all lambdas)" + "\n");
                         list.add("-1");
                     }
 
 
-
-                passedProductions.remove(Y);
+                    passedProductions.remove(Y);
+                }else{
+                    spaces(increment.getInteger());
+                    Console.print(Console.ANSI_RED+"Already Used\n");
+                }
             }
 
         }else{
@@ -218,24 +222,30 @@ public class SintacticAnalyzer {
 
             for(Production production:r.getProductions()){
                 int i;
+                boolean found = false;
                 for(i =0;i<production.getElements().size();i++){
                     if(production.getElements().get(i) instanceof  Rule){
                         if(production.getElements().get(i) == r){
+
+                            found=true;
                             break;
                         }
                     }
                 }
-                if( production.getElements().size()>i+1){
-                    Set<String>elements= first(production.getElements().get(i+1));
-                    if(elements.contains("-1")){
-                        follow(r,list);
-                    }else{
-                        list.addAll(elements);
+                if(found) {
+                    if (production.getElements().size() > i + 1) {
+                        Set<String> elements = first(production.getElements().get(i + 1));
+                        if (elements.contains("-1")) {
+                                follow(r, list);
+                        } else {
+                            list.addAll(elements);
+                        }
+                    } else {
+                        if (r != production.getElements().get(i)) {
+                            follow(r, list);
+                        }
                     }
-                }else{
-                    follow(r,list);
                 }
-
             }
         }
     }
