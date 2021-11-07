@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Map;
 
 import Tools.Console;
-public class LexicalAnalyzer {
+public class LexicAnalyzer {
     private AbstractMap.SimpleEntry<Object,Object>token;
     HashMap<String,String>reservedWords = new HashMap<>();
     PrintWriter tokenWriter;
     SymbolTable table;
     CharacterIterator it;
-    FDA<Character> fda;
+    public FDA<Character> fda;
     int num;
     public void setup(){
         table = new SymbolTable();
@@ -137,7 +137,7 @@ public class LexicalAnalyzer {
         //FIN ARCHIVO
         FinalState<Character>eof = new FinalState<Character>("eof"); //fin de archivo
 
-        Transition<Character>transition10=root.addTransition('\\',eof,false,true);
+        Transition<Character>transition10=root.addTransition('$',eof,false,true);
         transition10.addSemanticAction(new SemanticAction<Character>() {
             @Override
             public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
@@ -302,7 +302,7 @@ public class LexicalAnalyzer {
         });
 
         fda.setRoot(root);
-        fda.setDebug(true);
+        fda.setDebug(false);
         fda.setIterator(it);
         fda.setContinueOnError(false);
 

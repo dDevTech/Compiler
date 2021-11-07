@@ -31,8 +31,8 @@ public class CharacterIterator extends FileIterator<Character> {
     public Character next() {
         if(!sc.hasNext()&&!end){
             end = true;
-            current = '\\';
-            return '\\';//EOF
+            current = '$';
+            return '$';//EOF
 
         }else if(sc.hasNext()){
             Character character = sc.next().charAt(0);
@@ -40,7 +40,9 @@ public class CharacterIterator extends FileIterator<Character> {
                 line++;
                 column=0;
             }else if(character!='\n'){
+
                 column+=1;
+
             }
             current = character;
             return character;
@@ -50,12 +52,9 @@ public class CharacterIterator extends FileIterator<Character> {
 
     }
     public void skipLine() {
-
         sc.nextLine();
         column=0;
         line++;
-
-
     }
 
     @Override

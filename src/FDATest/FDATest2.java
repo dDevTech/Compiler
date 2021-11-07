@@ -1,14 +1,16 @@
 package FDATest;
 
-import Analyzer.Lexical.LexicalAnalyzer;
-import Analyzer.Sintactic.SintacticAnalyzer;
+import Analyzer.Sintactic.JavascriptSyntax;
+import Analyzer.Sintactic.OtherSintax;
+import Analyzer.Sintactic.SintaxAnalyzer;
 
 public class FDATest2 {
     public static void main(String[]args){
-        SintacticAnalyzer analyzer  = new SintacticAnalyzer();
-        analyzer.setup();
-        analyzer.setDebug(true);
-        analyzer.run();
+       /* JavascriptSyntax syntax = new JavascriptSyntax();
+        syntax.setup();*/
+
+        OtherSintax sintax = new OtherSintax();
+
 
     }
 }

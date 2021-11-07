@@ -45,6 +45,7 @@ public abstract class FDA<T>{
         do{}while(executeNext());
     }
     public boolean executeNext(){
+
         if(previousData==null){
             if(iterator.hasNext()){
                 previousData = root.feedForward(this,null,new ArrayList<>(),null,debug);
@@ -59,7 +60,12 @@ public abstract class FDA<T>{
             }
 
         }
-        return true;
+        if(previousData.getInternalCode()>0){
+            return true;
+        }else{
+            return false;
+        }
+
 
 
     }
@@ -69,7 +75,7 @@ public abstract class FDA<T>{
         if(continueOnError){
             try {
                 getIterator().skipLine();
-                Console.print(Console.ANSI_RED+"[Skipped line]");
+                if(debug)Console.print(Console.ANSI_RED+"[Skipped line]");
                 return true;
             }catch(Exception e){
                 return false;

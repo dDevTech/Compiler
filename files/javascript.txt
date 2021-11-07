@@ -1,13 +1,6 @@
-let int a;
-let   int  b;
-let boolean bbb;
-a = 3;
-b=a					    		 	 	 	 	 	 	 	 	 	 	 	 	 	 	 													;
-let boolean c;
-
-c = a == b;
-
-if (c) b = 3333;
-a = a - b;
-print (a) ;
-print(b);
+function SumaAlCuadrado int (int a, int b)
+{
+  j= a + b;
+  return j + j;
+  /* La función finaliza y devuelve el valor entero de la expresión */
+}
