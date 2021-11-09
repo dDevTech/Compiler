@@ -1,6 +1,14 @@
-function SumaAlCuadrado int (int a, int b)
+let string texto;
+function pideTexto ()
 {
-  j= a + b;
-  return j + j;
-  /* La función finaliza y devuelve el valor entero de la expresión */
+	print ("Introduce un texto");
+	input (texto);
 }
+function alert 23 (string msg)
+{
+	print ("Texto introducido:");
+	print (msg);
+}
+pideTexto();
+  alert
+	(texto);

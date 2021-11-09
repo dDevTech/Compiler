@@ -4,6 +4,7 @@ import Tools.FileWrite;
 
 public class JavascriptSyntax extends SintaxAnalyzer{
     public void setup(){
+
         super.setup();
         Rule P = new Rule("P");
         Rule B= new Rule("B");
@@ -28,6 +29,7 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Rule W_ = new Rule("W'");
         Rule V = new Rule("V");
         Rule V_ = new Rule("V'");
+        Rule Z= new Rule("Z");
 
         addRule(P);
         addRule(B);
@@ -52,6 +54,7 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         addRule(W_);
         addRule(V);
         addRule(V_);
+        addRule(Z);
 
 
         Production pP1 = new Production(B,P);
@@ -60,10 +63,10 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         P.addProductions(pP1,pP2,pP3);
 
         Production pB1 = new Production("let",T,"id","puntoycoma");
-        Production pB2 = new Production("if","abrePar",E,"cierraPar",S);
+        Production pB2 = new Production("if","abrePar",E,"cierraPar",S,Z);
         Production pB3 = new Production(S);
-        Production pB4 = new Production(C);
-        B.addProductions(pB1,pB2,pB3,pB4);
+
+        B.addProductions(pB1,pB2,pB3);
 
         Production pT1 = new Production("int");
         Production pT2 = new Production("string");
@@ -72,16 +75,14 @@ public class JavascriptSyntax extends SintaxAnalyzer{
 
         Production pS1 = new Production("id",S_);
         Production pS2 = new Production("print","abrePar",E,"cierraPar","puntoycoma");
-        Production pS3 = new Production("input","abrePar",E,"id","puntoycoma");
-
+        Production pS3 = new Production("input","abrePar",E,"cierraPar","puntoycoma");
         Production pS4 = new Production("return",X,"puntoycoma");
-        Production pS5 = new Production("menosigual",E,"puntoycoma");
-
-        S.addProductions(pS1, pS2,pS3,pS4,pS5);
+        S.addProductions(pS1, pS2,pS3,pS4);
 
         Production pS_1 = new Production("asig",E,"puntoycoma");
         Production pS_2 = new Production("abrePar",L,"cierraPar","puntoycoma");
-        S_.addProductions(pS_1, pS_2);
+        Production pS_3 = new Production("menosigual",E,"puntoycoma");
+        S_.addProductions(pS_1, pS_2,pS_3);
 
         Production pX1 = new Production(E);
         X.setLambda(true);
@@ -160,6 +161,10 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         V_.setLambda(true);
         V_.addProductions(pV_1);
 
+        Production pZ = new Production("else",S);
+        Z.setLambda(true);
+        Z.addProductions(pZ);
+
         setInitialRule(P);
         print(true);
         assignIds();
@@ -180,6 +185,7 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         }
         */
         LL1Collisions();
+        first(new IntRef(1),true,pP1);
         FileWrite write = new FileWrite("files/productions");
 
         for(Rule rule : getRules()){

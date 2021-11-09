@@ -6,10 +6,10 @@ import Analyzer.Sintactic.SintaxAnalyzer;
 
 public class FDATest2 {
     public static void main(String[]args){
-       /* JavascriptSyntax syntax = new JavascriptSyntax();
-        syntax.setup();*/
+        JavascriptSyntax syntax = new JavascriptSyntax();
+        syntax.setup();
 
-        OtherSintax sintax = new OtherSintax();
+        //OtherSintax sintax = new OtherSintax();
 
 
     }

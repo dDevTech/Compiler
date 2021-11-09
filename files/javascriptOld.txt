@@ -1,1 +1,7 @@
-+++++/*dadakjdksd*/++-=---++!===&&||||hola111"aaaasda\"\n"adad+++12315
+function SumaAlCuadrado int (int a, int b)
+{
+  j= a + b;
+  return j + j;
+  if(a==b) print(a); else print(b);
+  /* La función finaliza y devuelve el valor entero de la expresión */
+}

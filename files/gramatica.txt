@@ -1,24 +1,23 @@
 Terminales = { boolean else function if input int let print return string constanteEntera cadena id menosigual asig coma puntoycoma abrePar cierraPar abreLlave cierraLlave suma resta and or distinto igual false true eof }
-NoTerminales  = { P B T S S_1 X C L Q F H A K E E_1 R R_1 U U_1 W W_1 V V_1 }
+NoTerminales  = { P B T S S_1 X C L Q F H A K E E_1 R R_1 U U_1 W W_1 V V_1 Z }
 Axioma = P
 Producciones = {
    P -> B P
    P -> F P
    P -> eof
    B -> let T id puntoycoma
-   B -> if abrePar E cierraPar S
+   B -> if abrePar E cierraPar S Z
    B -> S
-   B -> C
    T -> int
    T -> string
    T -> boolean
    S -> id S_1
    S -> print abrePar E cierraPar puntoycoma
-   S -> input abrePar E id puntoycoma
+   S -> input abrePar E cierraPar puntoycoma
    S -> return X puntoycoma
-   S -> menosigual E puntoycoma
    S_1 -> asig E puntoycoma
    S_1 -> abrePar L cierraPar puntoycoma
+   S_1 -> menosigual E puntoycoma
    X -> E
    X ->  lambda
    C -> B C
@@ -56,6 +55,8 @@ Producciones = {
    V -> false
    V_1 -> abrePar L cierraPar
    V_1 ->  lambda
+   Z -> else S
+   Z ->  lambda
 
 }
 

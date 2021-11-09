@@ -304,7 +304,7 @@ public class LexicAnalyzer {
         fda.setRoot(root);
         fda.setDebug(false);
         fda.setIterator(it);
-        fda.setContinueOnError(false);
+        fda.setContinueOnError(true);
 
 
 
