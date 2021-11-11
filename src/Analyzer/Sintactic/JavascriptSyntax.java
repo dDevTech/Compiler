@@ -118,7 +118,7 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Production pE1= new Production (R,E_);
         E.addProductions(pE1);
 
-        Production pE_1= new Production ("or",R);
+        Production pE_1= new Production ("or",R,E_);
         E_.setLambda(true);
         E_.addProductions(pE_1);
 
@@ -126,15 +126,15 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Production pR1= new Production (U,R_);
         R.addProductions(pR1);
 
-        Production pR_1= new Production ("and",U);
+        Production pR_1= new Production ("and",U,R_);
         R_.setLambda(true);
         R_.addProductions(pR_1);
 
         Production pU1= new Production (W,U_);
         U.addProductions(pU1);
 
-        Production pU_1= new Production ("igual",W);
-        Production pU_2= new Production ("distinto",W);
+        Production pU_1= new Production ("igual",W,U_);
+        Production pU_2= new Production ("distinto",W,U_);
         U_.setLambda(true);
         U_.addProductions(pU_1,pU_2);
 
@@ -142,8 +142,8 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Production pW1= new Production (V,W_);
         W.addProductions(pW1);
 
-        Production pW_1= new Production ("suma",W);
-        Production pW_2= new Production ("resta",W);
+        Production pW_1= new Production ("suma",V,W_);
+        Production pW_2= new Production ("resta",V,W_);
         W_.setLambda(true);
         W_.addProductions(pW_1,pW_2);
 

@@ -1,14 +1,5 @@
-let string texto;
-function pideTexto ()
-{
-	print ("Introduce un texto");
-	input (texto);
+function a(){
+
+c=a+b-c;
+
 }
-function alert 23 (string msg)
-{
-	print ("Texto introducido:");
-	print (msg);
-}
-pideTexto();
-  alert
-	(texto);
