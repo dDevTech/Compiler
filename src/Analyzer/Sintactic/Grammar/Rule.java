@@ -1,7 +1,8 @@
-package Analyzer.Sintactic;
+package Analyzer.Sintactic.Grammar;
+
+import Analyzer.Semantic.SemanticAction;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Rule {
     private String letter;
@@ -9,6 +10,15 @@ public class Rule {
     private boolean lambda = false;
     private int lambdaIDParse = -1;
 
+    public SemanticAction getLambdaAction() {
+        return lambdaAction;
+    }
+
+    public void setLambdaAction(SemanticAction lambdaAction) {
+        this.lambdaAction = lambdaAction;
+    }
+
+    private SemanticAction lambdaAction;
     public boolean isLambda() {
         return lambda;
     }

@@ -1,33 +1,64 @@
 package Analyzer.Sintactic;
 
 import Analyzer.Lexical.LexicAnalyzer;
+import Analyzer.Semantic.RuleData;
+import Analyzer.Semantic.SemanticAction;
+import Analyzer.Sintactic.Utils.EntryRef;
+import Analyzer.Sintactic.Utils.IntRef;
+import Analyzer.Sintactic.Grammar.Production;
+import Analyzer.Sintactic.Grammar.Rule;
 import Common.ErrorHandler;
 import FDA.FDAException;
 import Tools.Console;
 import Tools.FileWrite;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 import java.util.*;
 
-public class SintaxAnalyzer {
+public class SintaxAnalyzer{
 
-    LexicAnalyzer lexicAnalyzer;
+    public LexicAnalyzer lexicAnalyzer;
     private ArrayList<Rule> rules = new ArrayList<>();
     private Rule initialRule;
-    private static List<Production> allProductions = new ArrayList<>();
 
+    public boolean isContinueOnError() {
+        return continueOnError;
+    }
+
+    public void setContinueOnError(boolean continueOnError) {
+        this.continueOnError = continueOnError;
+    }
+
+    private boolean continueOnError = false;
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    private boolean debug = false;
     public ArrayList<Rule> getRules() {
         return rules;
     }
 
-    public void setup() {
-        lexicAnalyzer = new LexicAnalyzer();
-        lexicAnalyzer.setup();
 
+
+    protected void setup(LexicAnalyzer lexicAnalyzer) {
+       this.lexicAnalyzer = lexicAnalyzer;
     }
-
+    public void start(){
+        execute();
+        close();
+    }
+    public void close(){
+        lexicAnalyzer.close();
+    }
     public void addRule(Rule rule) {
         rules.add(rule);
-
     }
 
     public void setInitialRule(Rule rule) {
@@ -91,7 +122,7 @@ public class SintaxAnalyzer {
         }
     }
 
-    public void execute(boolean debug) {
+    public Stack<Integer> execute() {
         Stack<Integer> stack = new Stack<>();
 
         descentRecursive(debug, new IntRef(1), new EntryRef(lexicAnalyzer.readToken()), initialRule, stack);
@@ -105,10 +136,12 @@ public class SintaxAnalyzer {
         }
         write.writer().flush();
         write.writer().close();
+
+        return stack;
         //*********************
     }
 
-    private void descentRecursive(boolean debug, IntRef increment, EntryRef entry, Rule rule, Stack<Integer> parse) {
+    private List<Object> descentRecursive(boolean debug, IntRef increment, EntryRef entry, Rule rule, Stack<Integer> parse) {
 
         if (entry.getEntry() != null) {
 
@@ -117,7 +150,7 @@ public class SintaxAnalyzer {
 
             boolean foundProduction = false;
             Production withLambda = null;//neccesary to know which production of rule has lambda to calculate FOLLOW
-
+            Multimap<String,Object> params = null;
             for (int i = 0; i < rule.getProductions().size(); i++) {
                 Production prod = rule.getProductions().get(i);
                 Set<String> set = first(new IntRef(increment.getInteger() + 1), false, prod);//first of each production of rule
@@ -136,26 +169,48 @@ public class SintaxAnalyzer {
 
                     increment.setInteger(increment.getInteger() + 1);
                     parse.push(prod.getIdParse());//add to parse current production id because current token is in FIRST
+                    params = ArrayListMultimap.create();
                     for (int j = 0; j < prod.getElements().size(); j++) {//iterate through terminals and no terminals
+
                         if (entry.getEntry() != null) {
+
                             if (prod.getElements().get(j) instanceof String) {// terminal
                                 if (!entry.getEntry().getKey().equals(prod.getElements().get(j))) {
                                     if (debug) spaces(increment.getInteger());
                                     if (debug)
                                         Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.RED_BOLD + "  INVALID\n");
 
-                                    ErrorHandler.showSintaxError(lexicAnalyzer.fda.getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ prod.getElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+prod + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+                                    ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ prod.getElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+prod + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+
                                 } else {//if terminal is equal to current token
+                                    params.put((String)prod.getElements().get(j),entry.getEntry().getValue());
                                     if (debug) spaces(increment.getInteger());
                                     if (debug)
                                         Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.GREEN_BOLD + "  VALID\n");
                                 }
                                 entry.setEntry(lexicAnalyzer.readToken()); //read next token
                             } else if (prod.getElements().get(j) instanceof Rule) {//no terminal
-                                descentRecursive(debug, increment, entry, (Rule) prod.getElements().get(j), parse);//recursive of non terminal rule
+                                List<Object>data= descentRecursive(debug, increment, entry, (Rule) prod.getElements().get(j), parse);//recursive of non terminal rule
+
+                                if(data==null){
+                                    if(isContinueOnError()){
+                                        return new ArrayList<>();
+                                    }else{
+                                        return null;
+                                    }
+                                }else{
+                                    params.putAll(rule.getLetter(),data);
+                                }
+                            } else if (prod.getElements().get(j) instanceof SemanticAction) {
+
+                                SemanticAction action = (SemanticAction) prod.getElements().get(j);
+                                List<RuleData>data = action.apply(params, lexicAnalyzer.getHandler());
+                                params.putAll(rule.getLetter(),data);
+
                             }
+
                         }else{
-                            return;
+                            return null;
                         }
 
                     }
@@ -167,7 +222,7 @@ public class SintaxAnalyzer {
                     if (debug) Console.print(Console.WHITE_BOLD + " -> SKIPPED\n");
                 }
             }
-
+            //TODO PARTE SEMANTICA LAMBDAS
             if (!foundProduction) {//not found production with  current token in FIRST
                 if (rule.isLambda()) {//is there any lambda production?
                     Set<String> set2 = follow(new IntRef(increment.getInteger() + 1), false, rule);
@@ -177,8 +232,17 @@ public class SintaxAnalyzer {
                         if (debug) spaces(increment.getInteger());
                         if (debug) Console.print(Console.BLUE_BOLD + "λ" + Console.GREEN_BOLD + "  VALID\n");
                         parse.push(rule.getLambdaIDParse()); //valorate as lambda then
+
+                        Multimap<String,Object>map = ArrayListMultimap.create();
+                        if(rule.getLambdaAction()!=null){
+                            List<RuleData>data=rule.getLambdaAction().apply(map, lexicAnalyzer.getHandler());
+                            map.putAll(rule.getLetter(),data);
+                        }
+
+                        return new ArrayList<>(map.get(rule.getLetter()));
                     }else{
-                        ErrorHandler.showSintaxError(lexicAnalyzer.fda.getIterator(), new FDAException(-6, "Lambda production available in "+Console.ANSI_YELLOW+rule+Console.ANSI_WHITE+" but FOLLOW of rule ("  +Console.ANSI_YELLOW+set2+Console.ANSI_WHITE+") doesn't contain current token "+Console.ANSI_YELLOW+entry.getEntry().getKey()));
+                        ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-6, "Lambda production available in "+Console.ANSI_YELLOW+rule+Console.ANSI_WHITE+" but FOLLOW of rule ("  +Console.ANSI_YELLOW+set2+Console.ANSI_WHITE+") doesn't contain current token "+Console.ANSI_YELLOW+entry.getEntry().getKey()));
+                        return null;
                     }
 
                 } else {//lambdas productions
@@ -197,25 +261,32 @@ public class SintaxAnalyzer {
                                             if (debug) spaces(increment.getInteger());
                                             if (debug) Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.RED_BOLD + "  INVALID\n");
 
-                                            ErrorHandler.showSintaxError(lexicAnalyzer.fda.getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ withLambda.getElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+withLambda + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+                                            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ withLambda.getElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+withLambda + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
                                         } else {//if terminal is equal to current token
                                             if (debug) spaces(increment.getInteger());
                                             if (debug) Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.GREEN_BOLD + "  VALID\n");
                                         }
                                         entry.setEntry(lexicAnalyzer.readToken()); //read next token
                                     } else if (withLambda.getElements().get(j) instanceof Rule) {//no terminal
-                                        descentRecursive(debug, increment, entry, (Rule) withLambda.getElements().get(j), parse);//recursive of non terminal rule
+                                        if( descentRecursive(debug, increment, entry, (Rule) withLambda.getElements().get(j), parse)==null){
+                                            if(isContinueOnError()){
+                                                return new ArrayList<>();
+                                            }else{
+                                                return null;
+                                            }
+                                        } //recursive of non terminal rule
+
                                     }
                                 }else{
-                                    return;
+                                    return null;
                                 }
 
                             }
                         } else {
-                            ErrorHandler.showSintaxError(lexicAnalyzer.fda.getIterator(), new FDAException(-4, "Checking lambda transition but FOLLOW not contains it"));
+                            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-4, "Checking lambda transition but FOLLOW not contains it"));
                         }
                     } else {
-                        ErrorHandler.showSintaxError(lexicAnalyzer.fda.getIterator(), new FDAException(-5, "No production available for current character and lambda transition is not available for token " + entry.getEntry().getKey() + "\n"));
+                        ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-5, "No production available for current character and lambda transition is not available for token " + entry.getEntry().getKey() + "\n"));
                     }
                 }
 
@@ -223,13 +294,16 @@ public class SintaxAnalyzer {
             } else {
                 if (debug) spaces(increment.getInteger());
                 if (debug) Console.print(Console.YELLOW_BOLD + "END\n");
+                //return of data sintetized atributes
+                return new ArrayList<>(params.get(rule.getLetter()));
+
             }
 
 
         } else {
-            ErrorHandler.showSintaxError(lexicAnalyzer.fda.getIterator(), new FDAException(-2, "Unexpected end of tokens"));
+            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-2, "Unexpected end of tokens"));
         }
-
+        return new ArrayList<>();
 
     }
 
@@ -248,12 +322,13 @@ public class SintaxAnalyzer {
                     for (Object o : prod.getElements()) {
                         if (o instanceof Rule) {
                             Console.print(Console.BLUE_BOLD + ((Rule) o).getLetter() + " ");
-                        } else {
+                        } else if(o instanceof String) {
                             Console.print(Console.GREEN_BOLD + o.toString() + " ");
+                        } else if(o instanceof SemanticAction){
+                            Console.print(Console.CYAN_BOLD + o.toString() + " ");
                         }
                     }
                     if (i < rule.getProductions().size() - 1) Console.print(Console.YELLOW_BOLD + " | ");
-
                     i++;
                 }
 
@@ -418,7 +493,7 @@ public class SintaxAnalyzer {
                 Console.print(Console.ANSI_RED + "Already Used\n");
             }
         } else {
-            throw new IllegalArgumentException("Must be rule or string");
+            //throw new IllegalArgumentException("Must be rule or string");
         }
 
         increment.setInteger(increment.getInteger() - 1);

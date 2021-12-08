@@ -1,6 +1,5 @@
-package Analyzer.Sintactic;
+package Analyzer.Sintactic.Grammar;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Production {
@@ -9,7 +8,7 @@ public class Production {
     public ArrayList<Object> getElements() {
         return elements;
     }
-    protected void setRule(Rule rule){
+    public void setRule(Rule rule){
         this.rule = rule;
     }
 

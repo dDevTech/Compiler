@@ -1,6 +1,11 @@
-package Analyzer.Sintactic;
+package Javascript;
 
-public class OtherSintax extends SintaxAnalyzer{
+import Analyzer.Sintactic.SintaxAnalyzer;
+import Analyzer.Sintactic.Utils.IntRef;
+import Analyzer.Sintactic.Grammar.Production;
+import Analyzer.Sintactic.Grammar.Rule;
+
+public class OtherSintax extends SintaxAnalyzer {
     public OtherSintax(){
         Rule S = new Rule("S");
         Rule A = new Rule("A");
@@ -49,7 +54,7 @@ public class OtherSintax extends SintaxAnalyzer{
         addRule(F);
         setInitialRule(S);
 
-        setup();
+        //setup();
         print(true);
         LL1Collisions();
 

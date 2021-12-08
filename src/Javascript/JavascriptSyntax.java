@@ -1,11 +1,28 @@
-package Analyzer.Sintactic;
+package Javascript;
 
+import Analyzer.Semantic.RuleData;
+import Analyzer.Semantic.SemanticAction;
+import Analyzer.Semantic.Type;
+import Analyzer.Sintactic.Grammar.*;
+import Analyzer.Sintactic.SintaxAnalyzer;
+import Analyzer.SymbolTable.SymbolTableHandler;
 import Tools.FileWrite;
+import com.google.common.collect.Multimap;
 
-public class JavascriptSyntax extends SintaxAnalyzer{
+import java.util.ArrayList;
+import java.util.List;
+
+public class JavascriptSyntax extends SintaxAnalyzer {
+    private JavascriptLexical lexical;
+
+    public JavascriptSyntax(JavascriptLexical lexical ){
+
+        this.lexical = lexical;
+    }
+
     public void setup(){
 
-        super.setup();
+        super.setup(lexical);
         Rule P = new Rule("P");
         Rule B= new Rule("B");
         Rule T = new Rule("T");
@@ -29,7 +46,9 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Rule W_ = new Rule("W'");
         Rule V = new Rule("V");
         Rule V_ = new Rule("V'");
+
         Rule Z= new Rule("Z");
+        Rule Z_= new Rule("Z'");
 
         addRule(P);
         addRule(B);
@@ -55,6 +74,8 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         addRule(V);
         addRule(V_);
         addRule(Z);
+        addRule(Z_);
+
 
 
         Production pP1 = new Production(B,P);
@@ -62,20 +83,40 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Production pP3 = new Production("eof");
         P.addProductions(pP1,pP2,pP3);
 
-        Production pB1 = new Production("let",T,"id","puntoycoma");
-        Production pB2 = new Production("if","abrePar",E,"cierraPar",S,Z);
+
+        SemanticAction actionpPB1 = new SemanticAction("T.id") {
+            @Override
+            public List<RuleData> apply(Multimap<String, Object> params, SymbolTableHandler handler) {
+
+                System.out.println(this.getAttribute(params,"B","id"));
+                return new ArrayList<>();
+            }
+        };
+        Production pB1 = new Production("let",T,actionpPB1,"id","puntoycoma");
+        Production pB2 = new Production("if","abrePar",E,"cierraPar",Z);
         Production pB3 = new Production(S);
 
         B.addProductions(pB1,pB2,pB3);
 
-        Production pT1 = new Production("int");
+
+        SemanticAction actionpT1 = new SemanticAction("T.id = int") {
+            @Override
+            public List<RuleData> apply(Multimap<String, Object> params, SymbolTableHandler handler) {
+                List<RuleData>data =new ArrayList<>();
+                RuleData ruleSet = new RuleData();
+                ruleSet.addAttribute("id",Type.INTEGER);
+                data.add(ruleSet);
+                return data;
+            }
+        };
+        Production pT1 = new Production("int",actionpT1);
         Production pT2 = new Production("string");
         Production pT3 = new Production("boolean");
         T.addProductions(pT1,pT2,pT3);
 
         Production pS1 = new Production("id",S_);
         Production pS2 = new Production("print","abrePar",E,"cierraPar","puntoycoma");
-        Production pS3 = new Production("input","abrePar",E,"cierraPar","puntoycoma");
+        Production pS3 = new Production("input","abrePar","id","cierraPar","puntoycoma");
         Production pS4 = new Production("return",X,"puntoycoma");
         S.addProductions(pS1, pS2,pS3,pS4);
 
@@ -118,34 +159,37 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         Production pE1= new Production (R,E_);
         E.addProductions(pE1);
 
-        Production pE_1= new Production ("or",R,E_);
+        Production pE_1= new Production ("suma",R,E_);
+        Production pE_2= new Production ("resta",R,E_);
         E_.setLambda(true);
-        E_.addProductions(pE_1);
+        E_.addProductions(pE_1,pE_2);
 
 
         Production pR1= new Production (U,R_);
         R.addProductions(pR1);
 
-        Production pR_1= new Production ("and",U,R_);
+        Production pR_1= new Production ("igual",U,R_);
+        Production pR_2= new Production ("distinto",U,R_);
         R_.setLambda(true);
-        R_.addProductions(pR_1);
+        R_.addProductions(pR_1,pR_2);
 
         Production pU1= new Production (W,U_);
         U.addProductions(pU1);
 
-        Production pU_1= new Production ("igual",W,U_);
-        Production pU_2= new Production ("distinto",W,U_);
+        Production pU_1= new Production ("and",W,U_);
+
         U_.setLambda(true);
-        U_.addProductions(pU_1,pU_2);
+        U_.addProductions(pU_1);
 
 
         Production pW1= new Production (V,W_);
         W.addProductions(pW1);
 
-        Production pW_1= new Production ("suma",V,W_);
-        Production pW_2= new Production ("resta",V,W_);
+        Production pW_1= new Production ("or",V,W_);
+
         W_.setLambda(true);
-        W_.addProductions(pW_1,pW_2);
+        W_.addProductions(pW_1);
+
 
 
 
@@ -161,9 +205,14 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         V_.setLambda(true);
         V_.addProductions(pV_1);
 
-        Production pZ = new Production("else",S);
-        Z.setLambda(true);
-        Z.addProductions(pZ);
+        Production pZ = new Production(S);
+        Production pZ2 = new Production("abreLlave",C,"cierraLlave",Z_);
+
+        Z.addProductions(pZ,pZ2);
+
+        Production pZ_1 = new Production("else","abreLlave",C,"cierraLlave");
+        Z_.setLambda(true);
+        Z_.addProductions(pZ_1);
 
         setInitialRule(P);
         print(true);
@@ -184,8 +233,10 @@ public class JavascriptSyntax extends SintaxAnalyzer{
             System.out.println(s);
         }
         */
+        setDebug(true);
+        setContinueOnError(false);
         LL1Collisions();
-        first(new IntRef(1),true,pP1);
+
         FileWrite write = new FileWrite("files/productions");
 
         for(Rule rule : getRules()){
@@ -204,6 +255,9 @@ public class JavascriptSyntax extends SintaxAnalyzer{
         }
         write.writer().flush();
         write.writer().close();
-        execute(true);
+
+
     }
+
+
 }

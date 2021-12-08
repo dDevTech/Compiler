@@ -1,4 +1,4 @@
-package Analyzer.Sintactic;
+package Analyzer.Sintactic.Utils;
 
 public class IntRef {
     private int integer;

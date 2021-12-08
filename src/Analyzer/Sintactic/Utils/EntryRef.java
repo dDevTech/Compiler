@@ -1,4 +1,4 @@
-package Analyzer.Sintactic;
+package Analyzer.Sintactic.Utils;
 
 import java.util.Map;
 
