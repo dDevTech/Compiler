@@ -1,13 +1,32 @@
 package Analyzer.SymbolTable;
 
+import Common.ErrorHandler;
+import FDA.FDAException;
+import Tools.FileWrite;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
 public class SymbolTableHandler {
+    public Stack<SymbolTable> getCurrentTables() {
+        return currentTables;
+    }
+
     private Stack<SymbolTable> currentTables;
     private List<SymbolTable> allTables;
-    private int displacementCount = 0;
+
+
+    public boolean isZoneDeclaration() {
+        return zoneDeclaration;
+    }
+
+    public void setZoneDeclaration(boolean zoneDeclaration) {
+
+        this.zoneDeclaration = zoneDeclaration;
+    }
+
+    private boolean zoneDeclaration = false;
     public SymbolTableHandler(){
         SymbolTable table = new SymbolTable();
         currentTables = new Stack<>();
@@ -16,40 +35,68 @@ public class SymbolTableHandler {
         allTables.add(table);//main
     }
     public int add(String lexeme){
-        return currentTables.peek().add(lexeme);
+
+        return currentTables.peek().add(lexeme,currentTables.peek());
     }
     public void createTable(){
+        if(currentTables.size()>=2){
+            ErrorHandler.showSymbolTableError("Function anidation is not supported in this language");
+        }
         SymbolTable table = new SymbolTable();
-        table.setDisplacementCount(currentTables.peek().getDisplacementCount());
+
         currentTables.push(table);
+        allTables.add(table);
     }
 
     public SymbolTable removeLast(){
         return currentTables.pop();
     }
-    public SymbolEntry find(String lexeme){
-        for(int i = 0; i< currentTables.size(); i++){
+    public int find(String lexeme){
+        for(int i = currentTables.size()-1; i>=0 ; i--){
             SymbolEntry entry = currentTables.get(i).get(lexeme);
             if(entry!=null){
-                return entry;
+                return entry.getId();
             }
         }
-        return null;
+        return -1;
 
     }
     public SymbolEntry find(int id){
-        for(int i = 0; i< currentTables.size(); i++){
+        for(int i = currentTables.size()-1; i>=0 ; i--){
             SymbolEntry entry = currentTables.get(i).get(id);
             if(entry!=null){
                 return entry;
             }
         }
+
         return null;
 
     }
-    public void toFile(){
-        for(SymbolTable table: allTables){
-            table.toFile();
+    public SymbolEntry findCurrentTable(int id){
+
+        SymbolEntry entry = currentTables.get(currentTables.size()-1).get(id);
+        if(entry!=null){
+            return entry;
         }
+        return null;
+
+    }
+
+    @Override
+    public String toString() {
+        return "SymbolTableHandler{" +
+                "currentTables=" + currentTables +
+                ", zoneDeclaration=" + zoneDeclaration +
+                '}';
+    }
+
+    public void toFile(){
+        FileWrite write = new FileWrite("files/tablaSimbolos.txt");
+        for(SymbolTable table: allTables){
+
+            table.toFile(write);
+        }
+        write.writer().flush();
+        write.writer().close();
     }
 }

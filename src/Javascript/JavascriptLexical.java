@@ -1,10 +1,13 @@
 package Javascript;
 
 import Analyzer.Lexical.LexicAnalyzer;
+import Analyzer.SymbolTable.Type;
+import Common.ErrorHandler;
 import FDA.*;
 import Tools.CharacterIterator;
 import Tools.Console;
 import Tools.Tools;
+import jdk.swing.interop.SwingInterOpUtils;
 
 import java.util.List;
 
@@ -164,16 +167,31 @@ public class JavascriptLexical extends LexicAnalyzer {
                 if(getReservedWords().containsKey(s)){
                     generateToken(getReservedWords().get(s),null);
                 }else{
-                    int id;
-                    if((id=getHandler().add(s))!=-1){
-                        generateToken("id",id);
-                    }else{
-                        generateToken("id",getHandler().find(s));
-                        if(fda.isDebug()){
-                            Console.print(Console.ANSI_RED+" Already created variable ("+s+") ");
-                        }
 
+                    int id;
+
+                    if(getHandler().isZoneDeclaration()){
+                        if(getHandler().find(s)!=-1){
+                            ErrorHandler.showLexicError(getIterator(),new FDAException(-7,"Variable '"+s+"' already declared"));
+                            generateToken("id",getHandler().find(s));
+
+                        }else{
+                            id=getHandler().add(s);
+                            generateToken("id",id);
+                        }
+                    }else{
+
+                        if(getHandler().find(s)==-1){
+                            id=getHandler().getCurrentTables().get(0).add(s,getHandler().getCurrentTables().get(0));
+                            generateToken("id",id);
+                            getHandler().find(id).setType(Type.INTEGER);
+                            //ErrorHandler.showLexicError(getIterator(),new FDAException(-6,"Can't use variable '"+s+"' because is not declared CREATING GLOBAL"));
+                        }else{
+                            generateToken("id",getHandler().find(s));
+                        }
                     }
+
+
 
                 }
 
@@ -290,7 +308,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         });
 
         fda.setRoot(root);
-        fda.setDebug(true);
+        fda.setDebug(false);
         fda.setIterator(getIterator());
         fda.setContinueOnError(true);
 

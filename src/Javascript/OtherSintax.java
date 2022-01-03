@@ -1,11 +1,10 @@
 package Javascript;
 
-import Analyzer.Sintactic.SintaxAnalyzer;
 import Analyzer.Sintactic.Utils.IntRef;
 import Analyzer.Sintactic.Grammar.Production;
 import Analyzer.Sintactic.Grammar.Rule;
 
-public class OtherSintax extends SintaxAnalyzer {
+public class OtherSintax extends SintaxSemanticAnalyzer {
     public OtherSintax(){
         Rule S = new Rule("S");
         Rule A = new Rule("A");

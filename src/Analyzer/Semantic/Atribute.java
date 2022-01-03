@@ -1,5 +1,8 @@
 package Analyzer.Semantic;
 
+import Analyzer.SymbolTable.Type;
+import Tools.Console;
+
 public class Atribute {
     private Object content;
     private String name;
@@ -18,5 +21,15 @@ public class Atribute {
 
     public void setContent(Object content) {
         this.content = content;
+    }
+
+    @Override
+    public String toString() {
+        if(content.equals(Type.OK_TYPE)){
+            return Console.GREEN_BOLD+ content+ Console.WHITE_BOLD;
+        }else if(content.equals(Type.ERROR_TYPE)){
+            return Console.RED_BOLD+ content+ Console.WHITE_BOLD;
+        }
+        return content.toString();
     }
 }

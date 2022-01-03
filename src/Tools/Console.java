@@ -6,7 +6,7 @@ package Tools;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
+import  java.util.regex.*;
 public class Console {
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_BLACK = "\u001B[30m";
@@ -37,6 +37,9 @@ public class Console {
     public static final String PURPLE_BOLD = "\033[1;35m"; // PURPLE
     public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
     public static final String WHITE_BOLD = "\033[1;37m";  // WHITE
+
+    private static FileWrite errorHandler = new FileWrite("files/errorLog.txt");
+
     public static void print(String prefix,String content){
         System.out.print(getCurrentTimeStamp()+"["+prefix+"]  "+content);
     }
@@ -45,6 +48,13 @@ public class Console {
     }
     public static void printError(String prefix,String content){
         System.out.print(Console.ANSI_YELLOW+"["+getCurrentTimeStamp()+"]  "+RED_BOLD+"["+prefix+"]  "+ANSI_RESET+content+ANSI_RESET);
+        String s = "["+getCurrentTimeStamp()+"]  "+"["+prefix+"]  "+content;
+        errorHandler.writer().println(s);
+
+    }
+    public static void saveLogError(){
+        errorHandler.writer().flush();
+        errorHandler.writer().close();
     }
     public static void print(String content){
         System.out.print(ANSI_RESET+content+ANSI_RESET);

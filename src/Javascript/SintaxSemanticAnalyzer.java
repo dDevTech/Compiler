@@ -1,6 +1,7 @@
-package Analyzer.Sintactic;
+package Javascript;
 
 import Analyzer.Lexical.LexicAnalyzer;
+import Analyzer.Semantic.Atribute;
 import Analyzer.Semantic.RuleData;
 import Analyzer.Semantic.SemanticAction;
 import Analyzer.Sintactic.Utils.EntryRef;
@@ -11,12 +12,10 @@ import Common.ErrorHandler;
 import FDA.FDAException;
 import Tools.Console;
 import Tools.FileWrite;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 import java.util.*;
 
-public class SintaxAnalyzer{
+public class SintaxSemanticAnalyzer {
 
     public LexicAnalyzer lexicAnalyzer;
     private ArrayList<Rule> rules = new ArrayList<>();
@@ -123,14 +122,15 @@ public class SintaxAnalyzer{
     }
 
     public Stack<Integer> execute() {
+        onSyntaxError= false;
         Stack<Integer> stack = new Stack<>();
 
-        descentRecursive(debug, new IntRef(1), new EntryRef(lexicAnalyzer.readToken()), initialRule, stack);
+        descentRecursive(null,debug, new IntRef(1), new EntryRef(lexicAnalyzer.readToken()), initialRule, stack);
 
         //Write PARSER to file
         FileWrite write = new FileWrite("files/parser.txt");
         write.writer().print("Descendente ");
-        System.out.println(stack.size());
+        System.out.println("Total parse size: "+stack.size());
         for (Integer i : stack) {
             write.writer().print(i + " ");
         }
@@ -140,8 +140,8 @@ public class SintaxAnalyzer{
         return stack;
         //*********************
     }
-
-    private List<Object> descentRecursive(boolean debug, IntRef increment, EntryRef entry, Rule rule, Stack<Integer> parse) {
+    boolean onSyntaxError = false;
+    private RuleData descentRecursive(RuleData ruleData,boolean debug, IntRef increment, EntryRef entry, Rule rule, Stack<Integer> parse) {
 
         if (entry.getEntry() != null) {
 
@@ -150,7 +150,11 @@ public class SintaxAnalyzer{
 
             boolean foundProduction = false;
             Production withLambda = null;//neccesary to know which production of rule has lambda to calculate FOLLOW
-            Multimap<String,Object> params = null;
+            HashMap<String,Object> params = new HashMap<>();
+            if(ruleData!=null){
+                params.put(ruleData.getRule(), ruleData);
+            }
+
             for (int i = 0; i < rule.getProductions().size(); i++) {
                 Production prod = rule.getProductions().get(i);
                 Set<String> set = first(new IntRef(increment.getInteger() + 1), false, prod);//first of each production of rule
@@ -169,56 +173,74 @@ public class SintaxAnalyzer{
 
                     increment.setInteger(increment.getInteger() + 1);
                     parse.push(prod.getIdParse());//add to parse current production id because current token is in FIRST
-                    params = ArrayListMultimap.create();
-                    for (int j = 0; j < prod.getElements().size(); j++) {//iterate through terminals and no terminals
+                    params = new HashMap<>();
+                    for (int j = 0; j < prod.getAllElements().size(); j++) {//iterate through terminals and no terminals
 
                         if (entry.getEntry() != null) {
 
-                            if (prod.getElements().get(j) instanceof String) {// terminal
-                                if (!entry.getEntry().getKey().equals(prod.getElements().get(j))) {
+                            if (prod.getAllElements().get(j) instanceof String) {// terminal
+                                if (!entry.getEntry().getKey().equals(prod.getAllElements().get(j))) {
                                     if (debug) spaces(increment.getInteger());
                                     if (debug)
                                         Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.RED_BOLD + "  INVALID\n");
-
-                                    ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ prod.getElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+prod + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+                                    onSyntaxError=true;
+                                    ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ prod.getAllElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+prod + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
 
                                 } else {//if terminal is equal to current token
-                                    params.put((String)prod.getElements().get(j),entry.getEntry().getValue());
+                                    params.put((String)prod.getAllElements().get(j),entry.getEntry().getValue());
                                     if (debug) spaces(increment.getInteger());
                                     if (debug)
                                         Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.GREEN_BOLD + "  VALID\n");
                                 }
                                 entry.setEntry(lexicAnalyzer.readToken()); //read next token
-                            } else if (prod.getElements().get(j) instanceof Rule) {//no terminal
-                                List<Object>data= descentRecursive(debug, increment, entry, (Rule) prod.getElements().get(j), parse);//recursive of non terminal rule
+                            } else if (prod.getAllElements().get(j) instanceof Rule) {//no terminal
+                                RuleData data= descentRecursive((RuleData) params.get(prod.getAllElements().get(j)),debug, increment, entry, (Rule) prod.getAllElements().get(j), parse);//recursive of non terminal rule
 
                                 if(data==null){
+
                                     if(isContinueOnError()){
-                                        return new ArrayList<>();
+                                        return new RuleData(null);
                                     }else{
                                         return null;
                                     }
                                 }else{
-                                    params.putAll(rule.getLetter(),data);
+                                    addListToParams(params,data.getRule(),data);
                                 }
-                            } else if (prod.getElements().get(j) instanceof SemanticAction) {
+                            } else if (prod.getAllElements().get(j) instanceof SemanticAction&&!onSyntaxError) {
 
-                                SemanticAction action = (SemanticAction) prod.getElements().get(j);
-                                List<RuleData>data = action.apply(params, lexicAnalyzer.getHandler());
-                                params.putAll(rule.getLetter(),data);
+
+                                SemanticAction action = (SemanticAction) prod.getAllElements().get(j);
+                                if (debug) spaces(increment.getInteger());
+                                if (debug) Console.print(Console.WHITE_BOLD+"EXECUTING "+ Console.CYAN_BOLD +prod.getRule()+" -> "+prod.getElements()+" : {"+action.getInfo()+"}"+Console.WHITE_BOLD+" WITH PARAMS "+params+"\n");
+                                List<RuleData> data=null;
+                                try {
+                                    data = action.apply(params, lexicAnalyzer.getHandler());
+                                }catch(Exception e){
+                                    ErrorHandler.showCompilerError(lexicAnalyzer.getIterator(), e);
+                                }
+
+                                if (debug) spaces(increment.getInteger());
+
+                                if (debug) Console.print(Console.WHITE_BOLD+"AND RETURNED "+data+"\n");
+                                for(RuleData element:data){
+                                    addListToParams(params, element.getRule(),element);
+                                }
+
 
                             }
 
                         }else{
-                            return null;
+                            System.err.println("END OF FILE!");
+                            //return null;
                         }
 
                     }
-                    increment.setInteger(increment.getInteger() - 1);
+                    if (debug)increment.setInteger(increment.getInteger() - 1);
 
                     foundProduction = true;//found a production where token is in PRODUCTION FIRST
                     break;//dont continue checking the rest (LL1)
                 } else {//check next production for FIRST
+
                     if (debug) Console.print(Console.WHITE_BOLD + " -> SKIPPED\n");
                 }
             }
@@ -229,20 +251,42 @@ public class SintaxAnalyzer{
                     if(set2.contains(entry.getEntry().getKey())){
                         if (debug) spaces(increment.getInteger());
                         if (debug) Console.print(Console.BLUE_BOLD + "PARSE ID: " + rule.getLambdaIDParse() + "\n");
-                        if (debug) spaces(increment.getInteger());
+                        if (debug) spaces(increment.getInteger()+1);
                         if (debug) Console.print(Console.BLUE_BOLD + "λ" + Console.GREEN_BOLD + "  VALID\n");
                         parse.push(rule.getLambdaIDParse()); //valorate as lambda then
 
-                        Multimap<String,Object>map = ArrayListMultimap.create();
+                        HashMap<String,Object>map = new HashMap<>();
                         if(rule.getLambdaAction()!=null){
+                            if (debug) spaces(increment.getInteger()+1);
+                            if (debug) Console.print(Console.WHITE_BOLD+"EXECUTING "+ Console.CYAN_BOLD +rule.getLambdaAction().getInfo()+Console.WHITE_BOLD+" WITH PARAMS "+params+"\n");
+
                             List<RuleData>data=rule.getLambdaAction().apply(map, lexicAnalyzer.getHandler());
-                            map.putAll(rule.getLetter(),data);
+
+                            if (debug) spaces(increment.getInteger()+1);
+                            if (debug) Console.print(Console.WHITE_BOLD+"AND RETURNED "+data+"\n");
+
+                            for(RuleData element:data){
+                                addListToParams(map, element.getRule(),element);
+                            }
+
                         }
 
-                        return new ArrayList<>(map.get(rule.getLetter()));
+                        RuleData data = (RuleData) map.get("ret");
+
+                        if(data==null) return new RuleData(null);
+                        data.setRule(rule.getLetter());
+                        return data;
+
                     }else{
+                        onSyntaxError=true;
                         ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-6, "Lambda production available in "+Console.ANSI_YELLOW+rule+Console.ANSI_WHITE+" but FOLLOW of rule ("  +Console.ANSI_YELLOW+set2+Console.ANSI_WHITE+") doesn't contain current token "+Console.ANSI_YELLOW+entry.getEntry().getKey()));
-                        return null;
+                        if(isContinueOnError()){
+
+                            return new RuleData(null);
+                        }else{
+
+                            return null;
+                        }
                     }
 
                 } else {//lambdas productions
@@ -254,23 +298,23 @@ public class SintaxAnalyzer{
                         if (set2.contains(entry.getEntry().getKey())) {
                             if (debug) spaces(increment.getInteger());
                             if (debug) Console.print(Console.RED_BOLD + withLambda+"Contains λ\n");
-                            for (int j = 0; j < withLambda.getElements().size(); j++) {//iterate through terminals and no terminals
+                            for (int j = 0; j < withLambda.getAllElements().size(); j++) {//iterate through terminals and no terminals
                                 if (entry.getEntry() != null) {
-                                    if (withLambda.getElements().get(j) instanceof String) {// terminal
-                                        if (!entry.getEntry().getKey().equals(withLambda.getElements().get(j))) {
+                                    if (withLambda.getAllElements().get(j) instanceof String) {// terminal
+                                        if (!entry.getEntry().getKey().equals(withLambda.getAllElements().get(j))) {
                                             if (debug) spaces(increment.getInteger());
                                             if (debug) Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.RED_BOLD + "  INVALID\n");
 
-                                            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ withLambda.getElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+withLambda + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+                                            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ withLambda.getAllElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+withLambda + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
                                         } else {//if terminal is equal to current token
                                             if (debug) spaces(increment.getInteger());
                                             if (debug) Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.GREEN_BOLD + "  VALID\n");
                                         }
                                         entry.setEntry(lexicAnalyzer.readToken()); //read next token
-                                    } else if (withLambda.getElements().get(j) instanceof Rule) {//no terminal
-                                        if( descentRecursive(debug, increment, entry, (Rule) withLambda.getElements().get(j), parse)==null){
+                                    } else if (withLambda.getAllElements().get(j) instanceof Rule) {//no terminal
+                                        if( descentRecursive((RuleData) params.get(((Rule) withLambda.getAllElements().get(j)).getLetter()),debug, increment, entry, (Rule) withLambda.getAllElements().get(j), parse)==null){
                                             if(isContinueOnError()){
-                                                return new ArrayList<>();
+                                                return new RuleData(null);
                                             }else{
                                                 return null;
                                             }
@@ -283,19 +327,26 @@ public class SintaxAnalyzer{
 
                             }
                         } else {
+                            onSyntaxError=true;
                             ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-4, "Checking lambda transition but FOLLOW not contains it"));
                         }
                     } else {
+                        onSyntaxError=true;
                         ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-5, "No production available for current character and lambda transition is not available for token " + entry.getEntry().getKey() + "\n"));
                     }
                 }
 
 
             } else {
+
                 if (debug) spaces(increment.getInteger());
                 if (debug) Console.print(Console.YELLOW_BOLD + "END\n");
                 //return of data sintetized atributes
-                return new ArrayList<>(params.get(rule.getLetter()));
+                RuleData data = (RuleData) params.get("ret");
+
+                if(data==null) return new RuleData(null);
+                data.setRule(rule.getLetter());
+                return data;
 
             }
 
@@ -303,7 +354,7 @@ public class SintaxAnalyzer{
         } else {
             ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-2, "Unexpected end of tokens"));
         }
-        return new ArrayList<>();
+        return new RuleData(null);
 
     }
 
@@ -314,18 +365,23 @@ public class SintaxAnalyzer{
                 Console.print(Console.WHITE_BOLD + rule.getLetter() + Console.PURPLE_BOLD + " => ");
                 if (rule.isLambda()) {
                     Console.print(Console.YELLOW_BOLD + "λ");
+                    if(rule.getLambdaAction()!=null){
+                        Console.print(Console.ANSI_CYAN+" "+rule.getLambdaAction().toString());
+                    }
                     Console.print(Console.YELLOW_BOLD + " | ");
+
+
                 }
                 int i = 0;
                 for (Production prod : rule.getProductions()) {
 
-                    for (Object o : prod.getElements()) {
+                    for (Object o : prod.getAllElements()) {
                         if (o instanceof Rule) {
                             Console.print(Console.BLUE_BOLD + ((Rule) o).getLetter() + " ");
                         } else if(o instanceof String) {
-                            Console.print(Console.GREEN_BOLD + o.toString() + " ");
+                            Console.print(Console.GREEN_BOLD + o + " ");
                         } else if(o instanceof SemanticAction){
-                            Console.print(Console.CYAN_BOLD + o.toString() + " ");
+                            Console.print(Console.ANSI_CYAN + o + " ");
                         }
                     }
                     if (i < rule.getProductions().size() - 1) Console.print(Console.YELLOW_BOLD + " | ");
@@ -343,7 +399,7 @@ public class SintaxAnalyzer{
                 for (Production prod : rule.getProductions()) {
 
                     Console.print(Console.PURPLE_BOLD + count + ". " + Console.WHITE_BOLD + rule.getLetter() + Console.PURPLE_BOLD + " => ");
-                    for (Object o : prod.getElements()) {
+                    for (Object o : prod.getAllElements()) {
                         if (o instanceof Rule) {
                             Console.print(Console.BLUE_BOLD + ((Rule) o).getLetter() + " ");
                         } else {
@@ -397,13 +453,14 @@ public class SintaxAnalyzer{
                 }
             }
         }*/
-        increment.setInteger(increment.getInteger() + 1);
+        if (debug)increment.setInteger(increment.getInteger() + 1);
         firstRecursive(debug, increment, o, set, productions);
 
         return set;
     }
 
     private void firstRecursive(boolean debug, IntRef increment, Object object, Set<String> list, Set<Production> passedProductions) {
+
         if (object instanceof String) {//Terminal
             if (debug) spaces(increment.getInteger());
             if (debug) Console.print(Console.BLUE_BOLD + object + "\n");
@@ -423,21 +480,24 @@ public class SintaxAnalyzer{
                 if (!passedProductions.contains(Y)) {//list to prevent infinite iterations - ALREADY  PASSED PRODUCTIONS
                     passedProductions.add(Y);
                     for (Object o : Y.getElements()) {//Go to elements of production and calculate their first and append to the FIRST list except lambda that is removed
-                        Set<String> set = new HashSet<>();
-                        if (debug) spaces(increment.getInteger());
-                        if (debug)
-                            Console.print(Console.PURPLE_BOLD + "=FIRST(" + Console.BLUE_BOLD + o + Console.PURPLE_BOLD + ")\n");
 
-                        increment.setInteger(increment.getInteger() + 1);
-                        firstRecursive(debug, increment, o, set, passedProductions);
+                            Set<String> set = new HashSet<>();
+                            if (debug) spaces(increment.getInteger());
+                            if (debug)
+                                Console.print(Console.PURPLE_BOLD + "=FIRST(" + Console.BLUE_BOLD + o + Console.PURPLE_BOLD + ")\n");
 
-                        containsLambda = set.contains("λ");
-                        set.remove("λ");
-                        list.addAll(set);
+                            if (debug)increment.setInteger(increment.getInteger() + 1);
 
-                        if (!containsLambda) {//not contain lambda
-                            break;
-                        }
+
+                            firstRecursive(debug, increment, o, set, passedProductions);
+
+                            containsLambda = set.contains("λ");
+                            set.remove("λ");
+                            list.addAll(set);
+
+                            if (!containsLambda) {//not contain lambda
+                                break;
+                            }
 
                     }
                     if (containsLambda) {//All elements contain lambda so lambda is added to FIRST list
@@ -463,20 +523,22 @@ public class SintaxAnalyzer{
             if (!passedProductions.contains(Y)) {
                 passedProductions.add(Y);
                 for (Object o : Y.getElements()) {
-                    Set<String> set = new HashSet<>();
-                    if (debug) spaces(increment.getInteger());
-                    if (debug)
-                        Console.print(Console.PURPLE_BOLD + "=FIRST(" + Console.BLUE_BOLD + o + Console.PURPLE_BOLD + ")\n");
+                    if(!(o instanceof SemanticAction)) {
+                        Set<String> set = new HashSet<>();
+                        if (debug) spaces(increment.getInteger());
+                        if (debug)
+                            Console.print(Console.PURPLE_BOLD + "=FIRST(" + Console.BLUE_BOLD + o + Console.PURPLE_BOLD + ")\n");
 
-                    increment.setInteger(increment.getInteger() + 1);
-                    firstRecursive(debug, increment, o, set, passedProductions);
+                        if (debug)increment.setInteger(increment.getInteger() + 1);
+                        firstRecursive(debug, increment, o, set, passedProductions);
 
-                    containsLambda = set.contains("λ");
-                    set.remove("λ");
-                    list.addAll(set);
+                        containsLambda = set.contains("λ");
+                        set.remove("λ");
+                        list.addAll(set);
 
-                    if (!containsLambda) {
-                        break;
+                        if (!containsLambda) {
+                            break;
+                        }
                     }
 
                 }
@@ -496,12 +558,13 @@ public class SintaxAnalyzer{
             //throw new IllegalArgumentException("Must be rule or string");
         }
 
-        increment.setInteger(increment.getInteger() - 1);
+        if (debug)increment.setInteger(increment.getInteger() - 1);
         return;
 
     }
 
     public Set<String> follow(IntRef increment, boolean debug, Rule rule) {
+
         if (increment == null) {
             increment = new IntRef(1);
         }
@@ -510,7 +573,7 @@ public class SintaxAnalyzer{
         if (debug) spaces(increment.getInteger());
         if (debug) Console.print(Console.PURPLE_BOLD + "FOLLOW: " + rule + "\n");
 
-        increment.setInteger(increment.getInteger() + 1);
+        if (debug)increment.setInteger(increment.getInteger() + 1);
         followRecursive(debug, increment, rule, set, productions);
 
         return set;
@@ -518,6 +581,7 @@ public class SintaxAnalyzer{
 
     //TODO review
     private void followRecursive(boolean debug, IntRef increment, Rule rule, Set<String> list, Set<Rule> passedProductions) {
+
         if (rule == initialRule) {
             list.add("$");
             if (debug) spaces(increment.getInteger());
@@ -534,19 +598,24 @@ public class SintaxAnalyzer{
                         if (production.getElements().get(i) == rule) {
                             if (debug) spaces(increment.getInteger());
                             if (debug)
-                                Console.print(Console.YELLOW_BOLD + " FOUND in " + r.getLetter() + " production" + Console.ANSI_WHITE + "  [" + production + "]\n");
+                                Console.print(Console.YELLOW_BOLD + " FOUND in " + r.getLetter() + " production" + Console.ANSI_WHITE + "  [" + production.getElements() + "]\n");
                             found = true;
                             break;
                         }
                     }
                 }
                 if (found) {
+
                     if (production.getElements().size() > i + 1) {
                         Production p = new Production();
                         p.setRule(r);
+
                         //Calcular next elements production
                         for (int j = i + 1; j < production.getElements().size(); j++) {
-                            p.getElements().add(production.getElements().get(j));
+
+                            p.getAllElements().add(production.getElements().get(j));
+
+
                         }
                         if (debug) spaces(increment.getInteger());
                         if (debug)
@@ -564,13 +633,13 @@ public class SintaxAnalyzer{
                                 if (debug) spaces(increment.getInteger());
                                 if (debug)
                                     Console.print(Console.PURPLE_BOLD + "=FOLLOW(" + Console.BLUE_BOLD + r + Console.PURPLE_BOLD + ")\n");
-                                increment.setInteger(increment.getInteger() + 1);
+                                if (debug)increment.setInteger(increment.getInteger() + 1);
                                 HashSet<String> set = new HashSet<>();
 
                                 followRecursive(debug, increment, r, set, passedProductions);
 
                                 list.addAll(set);
-                                increment.setInteger(increment.getInteger() - 1);
+                                if (debug)increment.setInteger(increment.getInteger() - 1);
                                 passedProductions.remove(r);
                             } else {
                                 if (debug) spaces(increment.getInteger());
@@ -584,12 +653,12 @@ public class SintaxAnalyzer{
                             if (debug) spaces(increment.getInteger());
                             if (debug)
                                 Console.print(Console.PURPLE_BOLD + "=FOLLOW(" + Console.BLUE_BOLD + r + Console.PURPLE_BOLD + ")\n");
-                            increment.setInteger(increment.getInteger() + 1);
+                            if (debug)increment.setInteger(increment.getInteger() + 1);
                             HashSet<String> set = new HashSet<>();
 
                             followRecursive(debug, increment, r, set, passedProductions);
                             list.addAll(set);
-                            increment.setInteger(increment.getInteger() - 1);
+                            if (debug)increment.setInteger(increment.getInteger() - 1);
                             passedProductions.remove(r);
                         } else {
                             if (debug) spaces(increment.getInteger());
@@ -601,7 +670,24 @@ public class SintaxAnalyzer{
             }
         }
     }
+    public void addParamToKey(HashMap<String,Object>map,String rule,String name ,Object content){
 
+        if(map.get(rule)!=null){
+            if(map.get(rule) instanceof RuleData) {
+                ((RuleData) map.get(rule)).addAttribute(name,content);
+            }
+        }else{
+            RuleData data =new RuleData(rule);
+            map.put(rule,data);
+            data.addAttribute(name,content);
+        }
+    }
+    public void addListToParams(HashMap<String,Object>map,String rule,RuleData data){
+        for(Map.Entry<String,Atribute>entry:data.getAtributes().entrySet()){
+
+            addParamToKey(map,rule,entry.getKey(),entry.getValue().getContent());
+        }
+    }
     public void spaces(int spaces) {
         for (int i = 0; i < spaces; i++) {
             System.out.print("\t");

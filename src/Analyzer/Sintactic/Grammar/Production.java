@@ -1,11 +1,25 @@
 package Analyzer.Sintactic.Grammar;
 
+import Analyzer.Semantic.SemanticAction;
+
 import java.util.ArrayList;
 
 public class Production {
     private Rule rule;
     private int idParse = -1;
     public ArrayList<Object> getElements() {
+        ArrayList<Object>list = new ArrayList<>();
+        for(Object o:elements){
+            if(o instanceof SemanticAction){
+
+            }else{
+                list.add(o);
+            }
+
+        }
+        return list;
+    }
+    public ArrayList<Object> getAllElements() {
         return elements;
     }
     public void setRule(Rule rule){
@@ -35,7 +49,7 @@ public class Production {
 
     @Override
     public String toString() {
-        return elements.toString();
+        return getElements().toString();
     }
 
     public int getIdParse() {

@@ -1,2 +1,37 @@
-TABLA PRINCIPAL # 1:
-* LEXEMA : 'a'
+TABLA # 0:
+* LEXEMA : 'n1'
+ATRIBUTOS:
++ tipo : 'INTEGER'
++ despl : 0
+* LEXEMA : 'n2'
+ATRIBUTOS:
++ tipo : 'INTEGER'
++ despl : 1
+* LEXEMA : 'l1'
+ATRIBUTOS:
++ tipo : 'BOOLEAN'
++ despl : 2
+* LEXEMA : 'l2'
+ATRIBUTOS:
++ tipo : 'BOOLEAN'
++ despl : 3
+* LEXEMA : 'cad'
+ATRIBUTOS:
++ tipo : 'STRING'
++ despl : 4
+* LEXEMA : 'ff'
+ATRIBUTOS:
++ tipo : 'FUNCTION'
++ numParam : 1
+ + TipoParam1 : 'BOOLEAN'
++ TipoRetorno : 'BOOLEAN'
++ EtiqFuncion : 'ff_0'
+* LEXEMA : 'varglobal'
+ATRIBUTOS:
++ tipo : 'INTEGER'
++ despl : 68
+TABLA # 1:
+* LEXEMA : 'ss'
+ATRIBUTOS:
++ tipo : 'BOOLEAN'
++ despl : 0

@@ -5,6 +5,7 @@ import Analyzer.SymbolTable.SymbolTableHandler;
 import com.google.common.collect.Multimap;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class SemanticAction{
 
@@ -12,24 +13,16 @@ public abstract class SemanticAction{
     public SemanticAction( ){
 
     }
-    public abstract List<RuleData> apply(Multimap<String,Object>params, SymbolTableHandler handler);
+    public abstract List<RuleData> apply(Map<String,Object> params, SymbolTableHandler handler);
     public SemanticAction(String info){
         this.info = info;
     }
-    public Object getAttribute(Multimap<String,Object>params,String rule,String attributeName){
+    public Object getAttribute(Map<String,Object>params,String rule,String attributeName){
         Object o = params.get(rule);
         if(o!=null){
-            if(o instanceof List<?>){
-                List<?> ruleDatas=(List<?>)o;
-                for(Object ruleData : ruleDatas){
-                    if(ruleData instanceof RuleData){
-                        Object content;
-                        if((content= ((RuleData)ruleData).searchAtribute(attributeName))!=null){
-                            return content;
-                        }
-                    }
+            if(o instanceof RuleData){
 
-                }
+                return ((RuleData)o).searchAtribute(attributeName);
 
             }
         }

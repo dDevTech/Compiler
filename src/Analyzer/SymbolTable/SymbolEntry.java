@@ -1,33 +1,54 @@
 package Analyzer.SymbolTable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class SymbolEntry {
     private String lexeme;
     private Type type;
-    private int displacement = 0;
+
+
+
+    private int displacement = -1;
     private int numParameters = 0;
-    private Type[]typesParamters;
+    private ArrayList<Type> types;
     private Type returnType;
     private String tag;
     private static int tagCounter = 0;
+    private SymbolTable table;
+    private int id;
+
     public SymbolEntry(String lexeme){
+
+
         this.lexeme = lexeme;
     }
 
     public void setupAsFunction(String lexeme){
 
+        this.type = Type.FUNCTION;
         tag = lexeme + "_"+tagCounter;
         tagCounter++;
 
+
     }
-    public int setType(Type type,SymbolTable table){
+    public void setTable(SymbolTable table){
+
+        this.table = table;
+    }
+    public int setType(Type type){
+
         this.type = type;
         displacement =  table.getDisplacementCount();
         table.setDisplacementCount(displacement+type.getSize());
+        System.out.println(this);
+
         return table.getDisplacementCount();
     }
-    public void setParameters(Type ... types){
-        numParameters = types.length;
-        typesParamters = types;
+    public void setParameters(ArrayList<Type>types){
+        numParameters = types.size();
+        this.types = types;
+        System.out.println(this);
 
     }
     public void setReturnType(Type type){
@@ -40,8 +61,8 @@ public class SymbolEntry {
     }
 
 
-    public Type[] getTypesParamters() {
-        return typesParamters;
+    public ArrayList<Type> getTypesParamters() {
+        return types;
     }
 
 
@@ -71,4 +92,33 @@ public class SymbolEntry {
     }
 
 
+    public void setId(int id) {
+
+        this.id = id;
+    }
+    public int getDisplacement() {
+        return displacement;
+    }
+
+    public void setDisplacement(int displacement) {
+        this.displacement = displacement;
+    }
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return "SymbolEntry{" +
+                "lexeme='" + lexeme + '\'' +
+                ", type=" + type +
+                ", displacement=" + displacement +
+                ", numParameters=" + numParameters +
+                ", typesParamters=" + types +
+                ", returnType=" + returnType +
+                ", tag='" + tag + '\'' +
+
+                ", id=" + id +
+                '}';
+    }
 }
