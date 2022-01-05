@@ -65,7 +65,7 @@ public class SymbolTable {
             if(entry.getValue().getTypesParamters()!=null){
                for(Type type:entry.getValue().getTypesParamters()){
                    write.writer().println(" + TipoParam"+counter+" : '"+type+"'");
-
+                   counter++;
                }
             }
             if(entry.getValue().getReturnType()!=null){
