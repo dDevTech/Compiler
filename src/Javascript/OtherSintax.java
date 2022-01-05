@@ -1,5 +1,6 @@
 package Javascript;
 
+import Analyzer.Sintactic.SintaxSemanticAnalyzer;
 import Analyzer.Sintactic.Utils.IntRef;
 import Analyzer.Sintactic.Grammar.Production;
 import Analyzer.Sintactic.Grammar.Rule;

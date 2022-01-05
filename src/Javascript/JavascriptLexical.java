@@ -5,9 +5,7 @@ import Analyzer.SymbolTable.Type;
 import Common.ErrorHandler;
 import FDA.*;
 import Tools.CharacterIterator;
-import Tools.Console;
 import Tools.Tools;
-import jdk.swing.interop.SwingInterOpUtils;
 
 import java.util.List;
 
@@ -35,7 +33,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition2 = dif.addTransition('=',difeq,false,true);
         transition2.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("menosigual",null);
             }
         });
@@ -45,7 +43,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition3= dif.addOtherElementTransitionFunction(difOnly,true,false);
         transition3.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("resta",null);
             }
         });
@@ -54,7 +52,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition4=root.addTransition('+',sum,false,true);
         transition4.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("suma",null);
             }
         });
@@ -73,7 +71,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition5=and.addTransition('&',andand,false,true);
         transition5.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("and",null);
             }
         });
@@ -84,7 +82,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition6=or.addTransition('|',oror,false,true);
         transition6.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("or",null);
             }
         });
@@ -102,14 +100,14 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition8=equals.addOtherElementTransitionFunction(assignment,true,false);
         transition8.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("asig",null);
             }
         });
         Transition<Character> transition7=equals.addTransition('=',equalsequals,false,true);
         transition7.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("igual",null);
             }
         });
@@ -120,7 +118,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition9 = different.addTransition('=',differentdifferent,false,true);
         transition9.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("distinto",null);
             }
         });
@@ -131,7 +129,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition10=root.addTransition('$',eof,false,true);
         transition10.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("eof",null);
             }
         });
@@ -161,7 +159,7 @@ public class JavascriptLexical extends LexicAnalyzer {
 
         transition.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 String s = Tools.characterListToString(sequence);
 
                 if(getReservedWords().containsKey(s)){
@@ -172,7 +170,7 @@ public class JavascriptLexical extends LexicAnalyzer {
 
                     if(getHandler().isZoneDeclaration()){
                         if(getHandler().find(s)!=-1){
-                            ErrorHandler.showLexicError(getIterator(),new FDAException(-7,"Variable '"+s+"' already declared"));
+                            ErrorHandler.showLexicError(getIterator(),new ProcessorError(-7,"Variable '"+s+"' already declared"));
                             generateToken("id",getHandler().find(s));
 
                         }else{
@@ -210,10 +208,10 @@ public class JavascriptLexical extends LexicAnalyzer {
         stringStart.addOtherElementTransitionFunction(stringStart,false,true);
         transitionString.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
 
                 if(sequence.size()>64){
-                    throw new FDAException(-4,"Max string length is 64");
+                    throw new ProcessorError(-4,"Max string length is 64");
                 }
                 String a = Tools.characterListToString(sequence);
 
@@ -228,7 +226,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> startInt=root.addTransitionFunction(TransitionFunction::isDigit,integerStart,false,true);
         startInt.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 num=0;
                 num = num*10 + Integer.parseInt(Character.toString(element));
             }
@@ -236,19 +234,19 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> integers=integerStart.addTransitionFunction(TransitionFunction::isDigit,integerStart,false,true);
         integers.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 num = num*10 + Integer.parseInt(Character.toString(element));
                 if(num> 32767){
-                    throw new FDAException(-3,"Max integer size is 32767");
+                    throw new ProcessorError(-3,"Max integer size is 32767");
                 }
             }
         });
         Transition<Character> integersTransition=integerStart.addOtherElementTransitionFunction(integerEnd,true,false);
         integersTransition.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 if(num> 32767){
-                    throw new FDAException(-3,"Max integer size is 32767");
+                    throw new ProcessorError(-3,"Max integer size is 32767");
                 }
                 generateToken("constanteEntera",num);
                 num=0;
@@ -259,7 +257,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition11=root.addTransition('(',par1,false,true);
         transition11.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("abrePar",null);
             }
         });
@@ -268,7 +266,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition12 = root.addTransition(')',par2,false,true);
         transition12.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("cierraPar",null);
             }
         });
@@ -276,7 +274,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition13 = root.addTransition('{',llav1,false,true);
         transition13.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("abreLlave",null);
             }
         });
@@ -284,7 +282,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition14 = root.addTransition('}',llav2,false,true);
         transition14.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("cierraLlave",null);
             }
         });
@@ -293,7 +291,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition15 = root.addTransition(';',ptcoma,false,true);
         transition15.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("puntoycoma",null);
             }
         });
@@ -302,7 +300,7 @@ public class JavascriptLexical extends LexicAnalyzer {
         Transition<Character> transition16 = root.addTransition(',',coma,false,true);
         transition16.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 generateToken("coma",null);
             }
         });

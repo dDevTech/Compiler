@@ -1,9 +1,9 @@
 package FDA;
 
-public class FDAException extends Exception{
+public class ProcessorError extends Exception{
     private int errorCode;
 
-    public FDAException(int errorCode, String message){
+    public ProcessorError(int errorCode, String message){
         super(message);
         this.errorCode = errorCode;
     }

@@ -3,14 +3,16 @@ package Javascript;
 import Analyzer.Semantic.RuleData;
 import Analyzer.Semantic.SemanticAction;
 import Analyzer.Sintactic.Grammar.*;
+import Analyzer.Sintactic.SintaxSemanticAnalyzer;
 import Analyzer.SymbolTable.SymbolEntry;
 import Analyzer.SymbolTable.SymbolTableHandler;
 import Analyzer.SymbolTable.Type;
 import Common.ErrorHandler;
-import FDA.FDAException;
+import FDA.ProcessorError;
 import Tools.FileWrite;
 import Tools.Tools;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +83,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionDeclTrue = new SemanticAction("zoneDeclTrue") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 handler.setZoneDeclaration(true);
 
                 return new ArrayList<>();
@@ -89,7 +91,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         };
         SemanticAction actionDeclFalse = new SemanticAction("zoneDeclFalse") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 handler.setZoneDeclaration(false);
 
                 return new ArrayList<>();
@@ -97,7 +99,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         };
         SemanticAction actionEnd= new SemanticAction("end") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 handler.removeLast();
                 return new ArrayList<>();
             }
@@ -111,7 +113,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPB1 = new SemanticAction("insertaTipoTS;B.type= T.type") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 SymbolEntry entry = handler.find((int)params.get("id"));//lexema
                 RuleData ruleT = ((RuleData)params.get("T"));
                 entry.setType(ruleT.getType());
@@ -127,14 +129,27 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Production pB1 = new Production(actionDeclTrue,"let",T,"id",actionDeclFalse,"puntoycoma",actionpPB1);
         SemanticAction actionpPB2 = new SemanticAction("check if") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleE = ((RuleData)params.get("E"));
+                RuleData ruleZ = ((RuleData)params.get("Z"));
                 Type type = ruleE.getType();
+                Type type2 = ruleZ.getType();
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
+                if(ruleZ.get("returnList")!=null&&handler.getCurrentTables().size()==1){
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-1,"Return not allowed in if statement outside of function"));
+                    ruleSet.addAttribute("type", Type.ERROR_TYPE);
+                }
+                if(ruleZ.get("returnList")!=null){
+                    ruleSet.addAttribute("returnList", ruleZ.get("returnList").getContent());
+                }
                 if(type.equals(Type.BOOLEAN)){
                     ruleSet.addAttribute("type", Type.OK_TYPE);
+                    if(type2.equals(Type.ERROR_TYPE)){
+                        ErrorHandler.showSemanticError(line,new ProcessorError(-2,"Sentences of if structure must be OK"));
+                    }
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-3,"Condition of if must be LOGIC and is of type "+ruleE.getType()));
                     ruleSet.addAttribute("type", Type.ERROR_TYPE);
                 }
                 data.add(ruleSet);
@@ -145,7 +160,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPB3 = new SemanticAction("B=S") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleS = ((RuleData)params.get("S"));
 
                 Type type = ruleS.getType();
@@ -153,6 +168,10 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type", type);
                 if(ruleS.get("returnType")!=null){
+                    if(handler.getCurrentTables().size()==1){
+                        ErrorHandler.showSemanticError(line,new ProcessorError(-4,"Return not allowed outside of function"));
+                        ruleSet.addAttribute("type",Type.ERROR_TYPE);
+                    }
                     ruleSet.addAttribute("returnType", ruleS.get("returnType").getContent());
                 }
                 data.add(ruleSet);
@@ -166,7 +185,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpT1 = new SemanticAction("T.type = int") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
 
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
@@ -179,7 +198,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Production pT1 = new Production("int",actionpT1);
         SemanticAction actionpT2 = new SemanticAction("T.type = string") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
 
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
@@ -192,7 +211,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Production pT2 = new Production("string",actionpT2);
         SemanticAction actionpT3 = new SemanticAction("T.type = boolean") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
 
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
@@ -208,7 +227,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPS1 = new SemanticAction("S.type = if(buscaTipo concide) FUNCTION CHECK PARAMS") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleS_1 = ((RuleData)params.get("S'"));
                 SymbolEntry entry = handler.find((int)params.get("id"));//lexema
 
@@ -223,24 +242,30 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
                                 ruleSet.addAttribute("type", Type.OK_TYPE);
                             } else {
                                 ruleSet.addAttribute("type", Type.ERROR_TYPE);
-                                ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(), new FDAException(-1, "Params of function must be the same type as function parameters"));
+                                ErrorHandler.showSemanticError(line, new ProcessorError(-5, "Params passed to function '"+entry.getLexeme()+"' "+o+" and must be the same type as function parameters "+entry.getTypesParamters()));
                             }
                         } else {
-                            ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(), new FDAException(-1, "Function must be called"));
+                            ErrorHandler.showSemanticError(line, new ProcessorError(-6, "Variable '" +entry.getLexeme()+"' is a function and can only be called"));
                             ruleSet.addAttribute("type", Type.ERROR_TYPE);
                         }
                     }else{
-                        ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(), new FDAException(-1, "Function can only be called"));
+                        ErrorHandler.showSemanticError(line, new ProcessorError(-6, "Variable '" +entry.getLexeme()+"' is a function and can only be called"));
                         ruleSet.addAttribute("type", Type.ERROR_TYPE);
                     }
                 }else{
-                    if(ruleS_1.getType().equals(entry.getType())){
-                        ruleSet.addAttribute("type", Type.OK_TYPE);
-                    }else{
-                        ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"Variable id must be the same type as other statement"));
-                        ruleSet.addAttribute("type", Type.ERROR_TYPE);
+                    if(ruleS_1.get("list")==null) {
+                        if(ruleS_1.getType().equals(entry.getType())){
+                            ruleSet.addAttribute("type", Type.OK_TYPE);
+                        }else{
+                            ErrorHandler.showSemanticError(line,new ProcessorError(-8,"Variable '"+entry.getLexeme()+"' is of type "+entry.getType()+" and sentence in the right is of type "+ruleS_1.getType()));
+                            ruleSet.addAttribute("type", Type.ERROR_TYPE);
 
+                        }
+                    }else{
+                        ErrorHandler.showSemanticError(line,new ProcessorError(-7,"Variable '"+entry.getLexeme()+"' is not a function and cannot be called"));
+                        ruleSet.addAttribute("type", Type.ERROR_TYPE);
                     }
+
                 }
 
 
@@ -254,14 +279,14 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPS2 = new SemanticAction("string or integer") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleE = ((RuleData)params.get("E"));
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 if(ruleE.getType().equals(Type.INTEGER) || ruleE.getType().equals(Type.STRING)){
                     ruleSet.addAttribute("type", Type.OK_TYPE);
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"Print statement must be of string or integer"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-9,"Print statement must have one parameter of type STRING or INTEGER"));
                     ruleSet.addAttribute("type", Type.ERROR_TYPE);
 
                 }
@@ -276,7 +301,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPS3 = new SemanticAction("string or integer") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 SymbolEntry entry = handler.find((int)params.get("id"));//lexema
 
                 List<RuleData>data =new ArrayList<>();
@@ -284,7 +309,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
                 if(entry.getType().equals(Type.INTEGER) || entry.getType().equals(Type.STRING)){
                     ruleSet.addAttribute("type", Type.OK_TYPE);
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"Input statement must be of string or integer"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-10,"Input statement must have one parameter of type STRING or INTEGER"));
                     ruleSet.addAttribute("type", Type.ERROR_TYPE);
 
                 }
@@ -299,7 +324,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPS_4 = new SemanticAction("S.type =  X.type") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleData = (RuleData) params.get("X");
                 Type type = (Type)ruleData.get("returnType").getContent();
                 List<RuleData>returns = new ArrayList<>();
@@ -318,7 +343,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPS_1 = new SemanticAction("S'.type =  E.type") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleData = (RuleData) params.get("E");
                 Type type = ruleData.getType();
                 List<RuleData>returns = new ArrayList<>();
@@ -333,7 +358,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPS_2 = new SemanticAction("S'.list = L.tipo") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("L");
 
                 List<RuleData>data =new ArrayList<>();
@@ -347,7 +372,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPS_3 = new SemanticAction("E.type = int then E.type else tipoerror") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleData = (RuleData) params.get("E");
                 Type type = ruleData.getType();
                 List<RuleData>returns = new ArrayList<>();
@@ -355,7 +380,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
                 if(type.equals(Type.INTEGER)){
                     data.addAttribute("type", Type.INTEGER);
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"-= must be an integer"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-11,"-= must be an integer"));
                     data.addAttribute("type", Type.ERROR_TYPE);
                 }
                 returns.add(data);
@@ -368,7 +393,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPX = new SemanticAction("X.returnType = E.tipo") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleData = (RuleData) params.get("E");
                 Type type = ruleData.getType();
 
@@ -376,6 +401,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("returnType",type);
                 data.add(ruleSet);
+
                 return data;
             }
         };
@@ -383,7 +409,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         X.setLambda(true);
         X.setLambdaAction(new SemanticAction("X.returnType = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
 
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
@@ -398,7 +424,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionC = new SemanticAction("B typo ok y C tipo ok") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleB = (RuleData)params.get("B");
                 RuleData ruleC = (RuleData)params.get("C");
                 List<RuleData>data =new ArrayList<>();
@@ -408,11 +434,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
                     returnTypes.add((Type)ruleB.get("returnType").getContent());
                 }
+                if(ruleB.get("returnList")!=null){
+                    for(Type t:(ArrayList<Type>)ruleB.get("returnList").getContent()){
+                        returnTypes.add(t);
+                    }
+
+                }
                 if(ruleB.getType().equals(Type.OK_TYPE)&&ruleC.getType().equals(Type.OK_TYPE)){
                     ruleSet.addAttribute("type",Type.OK_TYPE);
                     ruleSet.addAttribute("returnList",returnTypes);
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"all statements must be ok"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-12,"Statements must be OK and there are sentences with errors"));
                     ruleSet.addAttribute("type",Type.ERROR_TYPE);
                     ruleSet.addAttribute("returnList",returnTypes);
                 }
@@ -430,7 +462,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         C.setLambda(true);
         C.setLambdaAction(new SemanticAction("C.type = tipook") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.OK_TYPE);
@@ -445,7 +477,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPL1 = new SemanticAction("add to list of E type and sytentize") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleE= (RuleData)params.get("E");
                 RuleData ruleQ = (RuleData)params.get("Q");
 
@@ -464,7 +496,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         L.setLambda(true);
         L.setLambdaAction(new SemanticAction("L.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("list",new ArrayList<>());
@@ -477,7 +509,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPQ1 = new SemanticAction("add to list of E type and sytentize") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleE= (RuleData)params.get("E");
                 RuleData ruleQ = (RuleData)params.get("Q");
 
@@ -496,7 +528,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Q.setLambda(true);
         Q.setLambdaAction(new SemanticAction("Q.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("list",new ArrayList<>());
@@ -509,7 +541,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPF10 = new SemanticAction("zone decl true") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 handler.setZoneDeclaration(true);
                 List<RuleData>data =new ArrayList<>();
 
@@ -519,7 +551,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         };
         SemanticAction actionPF11 = new SemanticAction("set return type of H") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 SymbolEntry entry = handler.find((int)params.get("id"));//lexema
                 RuleData ruleH = (RuleData)params.get("H");
                 handler.createTable();
@@ -533,7 +565,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         };
         SemanticAction actionPF12 = new SemanticAction("add type parameters ZONE DECL= FALSE") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 SymbolEntry entry = handler.find((int)params.get("id"));//lexema
                 entry.setupAsFunction(entry.getLexeme());
                 RuleData ruleA = (RuleData)params.get("A");
@@ -547,13 +579,13 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         };
         SemanticAction actionPF13 = new SemanticAction("F.type = C.type ") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleC = (RuleData)params.get("C");
                 RuleData ruleSet = new RuleData("ret");
                 SymbolEntry entry = handler.find((int)params.get("id"));
                 for(Type type :(ArrayList<Type>)ruleC.get("returnList").getContent()){
-                    if(!entry.getReturnType().equals(type)) ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-5,"Return types in function "+entry.getLexeme()+" must be of type " +entry.getReturnType()));
+                    if(!entry.getReturnType().equals(type)) ErrorHandler.showSemanticError(line,new ProcessorError(-13,"Return types in function "+entry.getLexeme()+" must be of type " +entry.getReturnType()+" and there is one of type "+type));
                 }
                 ruleSet.addAttribute("type",ruleC.getType());
 
@@ -570,7 +602,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPH1 = new SemanticAction("H.type = T.type") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleT = (RuleData)params.get("T");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
@@ -583,7 +615,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         H.setLambda(true);
         H.setLambdaAction(new SemanticAction("H.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -596,7 +628,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPA1 = new SemanticAction("add to list of K type and sytentize") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleT = (RuleData)params.get("T");
                 RuleData ruleK = (RuleData)params.get("K");
                 SymbolEntry entry = handler.find((int)params.get("id"));
@@ -615,7 +647,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         A.setLambda(true);
         A.setLambdaAction(new SemanticAction("A.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -629,7 +661,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPK1 = new SemanticAction("add elements") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleT = (RuleData)params.get("T");
                 RuleData ruleK = (RuleData)params.get("K");
                 SymbolEntry entry = handler.find((int)params.get("id"));
@@ -650,7 +682,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         K.setLambda(true);
         K.setLambdaAction(new SemanticAction("K.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("list",new ArrayList<Type>());
@@ -663,17 +695,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPE = new SemanticAction("R E'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleV = (RuleData)params.get("R");
                 RuleData ruleW_1 = (RuleData)params.get("E'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 if(ruleW_1.getType().equals(Type.EMPTY)){
                     ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())){
+                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.INTEGER)){
                     ruleSet.addAttribute("type",  ruleV.getType());
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"sum must be of the same types"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-14,"+/- operators must have  INTEGER operands and are of type:  "+ruleV.getType()+" and "+ruleW_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -687,18 +719,18 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPE_1 = new SemanticAction("+ R E'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("R");
-                RuleData ruleW_1 = (RuleData)params.get("E'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleR = (RuleData)params.get("R");
+                RuleData ruleE_1 = (RuleData)params.get("E'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.INTEGER)){
+                if(ruleE_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type",  ruleR.getType());
+                }else if(ruleE_1.getType().equals(ruleR.getType())&&ruleE_1.getType().equals(Type.INTEGER)){
 
-                    ruleSet.addAttribute("type",  ruleV.getType());
+                    ruleSet.addAttribute("type",  ruleR.getType());
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"sum must be of integers"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-15,"+ operators must have INTEGER operands and are of type:  "+ruleR.getType()+" and "+ruleE_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -711,17 +743,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPE_2 = new SemanticAction("- R E'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("R");
-                RuleData ruleW_1 = (RuleData)params.get("E'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleR = (RuleData)params.get("R");
+                RuleData ruleE_1 = (RuleData)params.get("E'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.INTEGER)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
+                if(ruleE_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type",  ruleR.getType());
+                }else if(ruleE_1.getType().equals(ruleR.getType())&&ruleE_1.getType().equals(Type.INTEGER)){
+                    ruleSet.addAttribute("type",  ruleR.getType());
                 }else{
-                    ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"difference must be of integers"));
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-16,"- operators must have  INTEGER operands and are of type:  "+ruleR.getType()+" and "+ruleE_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -734,7 +766,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         E_.setLambda(true);
         E_.setLambdaAction(new SemanticAction("R_1.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -747,17 +779,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPR = new SemanticAction("U R'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("U");
-                RuleData ruleW_1 = (RuleData)params.get("R'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleU = (RuleData)params.get("U");
+                RuleData ruleR_1 = (RuleData)params.get("R'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type", ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.INTEGER)){
+                if(ruleR_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type", ruleU.getType());
+                }else if(ruleR_1.getType().equals(ruleU.getType())&&ruleR_1.getType().equals(Type.INTEGER)){
                     ruleSet.addAttribute("type",  Type.BOOLEAN);
                 }else{
-
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-17,"==/!= operators must have  INTEGER  operands and are of type:  "+ruleU.getType()+" and "+ruleR_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -771,16 +803,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPR_1 = new SemanticAction("== U R'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("U");
-                RuleData ruleW_1 = (RuleData)params.get("R'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleU = (RuleData)params.get("U");
+                RuleData ruleR_1 = (RuleData)params.get("R'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.INTEGER)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
+                if(ruleR_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type",  ruleU.getType());
+                }else if(ruleR_1.getType().equals(ruleU.getType())&&ruleR_1.getType().equals(Type.INTEGER)){
+                    ruleSet.addAttribute("type",  ruleU.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-18,"== operators must have INTEGER operands and are of type:  "+ruleU.getType()+" and "+ruleR_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -793,16 +826,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPR_2 = new SemanticAction("!= U R'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("U");
-                RuleData ruleW_1 = (RuleData)params.get("R'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleU = (RuleData)params.get("U");
+                RuleData ruleR_1 = (RuleData)params.get("R'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.INTEGER)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
+                if(ruleR_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type",  ruleU.getType());
+                }else if(ruleR_1.getType().equals(ruleU.getType())&&ruleR_1.getType().equals(Type.INTEGER)){
+                    ruleSet.addAttribute("type",  ruleU.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-19,"!= operators must have INTEGER operands and are of type:  "+ruleU.getType()+" and "+ruleR_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -815,7 +849,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         R_.setLambda(true);
         R_.setLambdaAction(new SemanticAction("R_1.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -828,16 +862,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPU = new SemanticAction("W U'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("W");
-                RuleData ruleW_1 = (RuleData)params.get("U'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleW = (RuleData)params.get("W");
+                RuleData ruleU_1 = (RuleData)params.get("U'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())){
-                    ruleSet.addAttribute("type",  ruleV.getType());
+                if(ruleU_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type",  ruleW.getType());
+                }else if(ruleU_1.getType().equals(ruleW.getType())&&ruleU_1.getType().equals(Type.BOOLEAN)){
+                    ruleSet.addAttribute("type",  ruleW.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-20,"AND operator must have LOGIC  operands and are of type:  "+ruleW.getType()+" and "+ruleU_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -852,16 +887,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPU_1 = new SemanticAction("and W U'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
-                RuleData ruleV = (RuleData)params.get("W");
-                RuleData ruleW_1 = (RuleData)params.get("U'");
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
+                RuleData ruleW = (RuleData)params.get("W");
+                RuleData ruleU_1 = (RuleData)params.get("U'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
-                if(ruleW_1.getType().equals(Type.EMPTY)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.BOOLEAN)){
-                    ruleSet.addAttribute("type",  ruleV.getType());
+                if(ruleU_1.getType().equals(Type.EMPTY)){
+                    ruleSet.addAttribute("type",  ruleW.getType());
+                }else if(ruleU_1.getType().equals(ruleW.getType())&&ruleU_1.getType().equals(Type.BOOLEAN)){
+                    ruleSet.addAttribute("type",  ruleW.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-21,"AND operators must have INTEGER operands and are of type:  "+ruleW.getType()+" and "+ruleU_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -875,7 +911,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         U_.setLambda(true);
         U_.setLambdaAction(new SemanticAction("U_1.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -887,16 +923,17 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPW = new SemanticAction("V W'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleV = (RuleData)params.get("V");
                 RuleData ruleW_1 = (RuleData)params.get("W'");
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 if(ruleW_1.getType().equals(Type.EMPTY)){
                     ruleSet.addAttribute("type",  ruleV.getType());
-                }else if(ruleW_1.getType().equals(ruleV.getType())){
+                }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.BOOLEAN)){
                     ruleSet.addAttribute("type",  ruleV.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-22,"OR operator must have  BOOLEAN  operands and are of type:  "+ruleV.getType()+" and "+ruleW_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -911,7 +948,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPW_1 = new SemanticAction("or V W'") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData ruleV = (RuleData)params.get("V");
                 RuleData ruleW_1 = (RuleData)params.get("W'");
                 List<RuleData>data =new ArrayList<>();
@@ -921,6 +958,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
                 }else if(ruleW_1.getType().equals(ruleV.getType())&&ruleW_1.getType().equals(Type.BOOLEAN)){
                     ruleSet.addAttribute("type",  ruleV.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-23,"OR operator must have  BOOLEAN  operands and are of type:  "+ruleV.getType()+" and "+ruleW_1.getType()));
                     ruleSet.addAttribute("type",  Type.ERROR_TYPE);
                 }
 
@@ -934,7 +972,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         W_.setLambda(true);
         W_.setLambdaAction(new SemanticAction("W_1.type = empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -946,25 +984,31 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPV1 = new SemanticAction("V.tipo = V'.tipo") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("V'");
 
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 SymbolEntry entry = handler.find((int)params.get("id"));
                 if(rule.getType()== null){
-                    Object o = rule.get("list").getContent();
-                    if(o instanceof ArrayList<?>){
-                        if(Tools.compareArrays(entry.getTypesParamters(),(ArrayList<Type>)o)){
-                            ruleSet.addAttribute("type", entry.getReturnType());
+                    if(entry.getType().equals(Type.FUNCTION)){
+                        Object o = rule.get("list").getContent();
+                        if(o instanceof ArrayList<?>){
+                            if(Tools.compareArrays(entry.getTypesParamters(),(ArrayList<Type>)o)){
+                                ruleSet.addAttribute("type", entry.getReturnType());
+                            }else{
+                                ruleSet.addAttribute("type", Type.ERROR_TYPE);
+                                ErrorHandler.showSemanticError(line, new ProcessorError(-5, "Params passed to function '"+entry.getLexeme()+"' "+o+" and must be the same type as function parameters "+entry.getTypesParamters()));
+                            }
                         }else{
+                            ErrorHandler.showSemanticError(line, new ProcessorError(-6, "Variable '" +entry.getLexeme()+"' is a function and can only be called"));
                             ruleSet.addAttribute("type", Type.ERROR_TYPE);
-                            ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"Params of function must be the same type as function parameters"));
                         }
                     }else{
-                        ErrorHandler.showSemanticError(lexicAnalyzer.getIterator(),new FDAException(-1,"Function must be called"));
+                        ErrorHandler.showSemanticError(line, new ProcessorError(-7, "Variable '" +entry.getLexeme()+"' is not a function and cannot be called"));
                         ruleSet.addAttribute("type", Type.ERROR_TYPE);
                     }
+
                 }else
                 if(rule.getType().equals(Type.EMPTY)){
 
@@ -980,7 +1024,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPV2 = new SemanticAction("V.tipo = E.tipo") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("E");
 
                 List<RuleData>data =new ArrayList<>();
@@ -993,7 +1037,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Production pV2= new Production ("abrePar",E,"cierraPar",actionpPV2);
         SemanticAction actionpPV4 = new SemanticAction("V.tipo = ent") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type", Type.INTEGER);
@@ -1005,7 +1049,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPV5 = new SemanticAction("V.tipo = string") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type", Type.STRING);
@@ -1017,7 +1061,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPV6 = new SemanticAction("V.tipo = log") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type", Type.BOOLEAN);
@@ -1028,7 +1072,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Production pV6= new Production ("true",actionpPV6);
         SemanticAction actionpPV7 = new SemanticAction("V.tipo = log") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type", Type.BOOLEAN);
@@ -1043,7 +1087,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionpPV_1 = new SemanticAction("V'.list = L.tipo") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("L");
 
                 List<RuleData>data =new ArrayList<>();
@@ -1057,7 +1101,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         V_.setLambda(true);
         V_.setLambdaAction(new SemanticAction("V'.type= empty") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.EMPTY);
@@ -1068,7 +1112,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         V_.addProductions(pV_1);
         SemanticAction actionPZ = new SemanticAction("Z.type = S.type") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("S");
 
                 List<RuleData>data =new ArrayList<>();
@@ -1083,14 +1127,28 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPZ_2 = new SemanticAction("Z.type = C.tipo || Z'.tipo") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("C");
                 RuleData rule2 = (RuleData)params.get("Z'");
                 List<RuleData>data =new ArrayList<>();
+                List<Type>returnTypes = new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
+                if(rule.get("returnList")!=null){
+                    for(Type t:(ArrayList<Type>)rule.get("returnList").getContent()){
+                        returnTypes.add(t);
+                    }
+
+                }
+                if(rule2.get("returnList")!=null){
+                    for(Type t:(ArrayList<Type>)rule2.get("returnList").getContent()){
+                        returnTypes.add(t);
+                    }
+                }
+                ruleSet.addAttribute("returnList",returnTypes);
                 if(rule.getType().equals(Type.OK_TYPE)&&rule2.getType().equals(Type.OK_TYPE)){
                     ruleSet.addAttribute("type",rule.getType());
                 }else{
+                    ErrorHandler.showSemanticError(line,new ProcessorError(-26,"All statements inside IF must be OK"));
                     ruleSet.addAttribute("type",Type.ERROR_TYPE);
                 }
 
@@ -1106,11 +1164,14 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
 
         SemanticAction actionPZ_1 = new SemanticAction("Z'.TYPE = C.type") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 RuleData rule = (RuleData)params.get("C");
 
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
+                if(rule.get("returnList")!=null){
+                    ruleSet.addAttribute("returnList",rule.get("returnList").getContent());
+                }
                 ruleSet.addAttribute("type",rule.getType());
                 data.add(ruleSet);
                 return data;
@@ -1120,10 +1181,11 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
         Z_.setLambda(true);
         Z_.setLambdaAction(new SemanticAction("Z'.tipo = tipoOk") {
             @Override
-            public List<RuleData> apply(Map<String, Object> params, SymbolTableHandler handler) {
+            public List<RuleData> apply(int line,Map<String, Object> params, SymbolTableHandler handler) {
                 List<RuleData>data =new ArrayList<>();
                 RuleData ruleSet = new RuleData("ret");
                 ruleSet.addAttribute("type",Type.OK_TYPE);
+
                 data.add(ruleSet);
                 return data;
             }
@@ -1149,7 +1211,7 @@ public class JavascriptSyntaxSemantic extends SintaxSemanticAnalyzer {
             System.out.println(s);
         }
         */
-        setDebug(true);
+        setDebug(false);
         setContinueOnError(false);
         LL1Collisions();
 

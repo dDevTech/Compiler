@@ -53,10 +53,10 @@ public class FDATest {
         Transition<Character> transition2=letterDigit.addTransitionFunction(TransitionFunction::isLetterDigit,letterDigit,false,true);
         transition2.addSemanticAction(new SemanticAction<Character>() {
             @Override
-            public void onAction(State<Character> state, Character element, List<Character> sequence) throws FDAException {
+            public void onAction(State<Character> state, Character element, List<Character> sequence) throws ProcessorError {
                 //System.out.print(sequence);
                 if(sequence.size()>5){
-                    throw new FDAException(-3,"Variables must be max size of 5");
+                    throw new ProcessorError(-3,"Variables must be max size of 5");
                 }
 
             }

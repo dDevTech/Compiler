@@ -1,28 +1,10 @@
-let int n1;let int n2;
-let boolean l1;let boolean l2;
-let
-	string
-		cad
-			;
-input (n1);
-l1 = l2;
-if (l1&& l2) cad = "hello";
-n2 = n1 - 378;
-
-print(((	33
-		-
-		n1
-		+
-		n2)));
-
-function ff boolean(boolean ss)
+function SumaAlCuadrado boolean (boolean a, int b)
 {
-	varglobal = 8;
-	if (l1) l2 = ff (ss);
-	return ss;
+  if(a()==5){
+    return 0;
+    return a;
+  }
+  return "aaa";
+
 }
 
-
-
-if (ff(l2))
-    print (varglobal);

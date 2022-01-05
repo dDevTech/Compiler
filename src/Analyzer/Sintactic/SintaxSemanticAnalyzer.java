@@ -1,4 +1,4 @@
-package Javascript;
+package Analyzer.Sintactic;
 
 import Analyzer.Lexical.LexicAnalyzer;
 import Analyzer.Semantic.Atribute;
@@ -9,7 +9,7 @@ import Analyzer.Sintactic.Utils.IntRef;
 import Analyzer.Sintactic.Grammar.Production;
 import Analyzer.Sintactic.Grammar.Rule;
 import Common.ErrorHandler;
-import FDA.FDAException;
+import FDA.ProcessorError;
 import Tools.Console;
 import Tools.FileWrite;
 
@@ -142,7 +142,7 @@ public class SintaxSemanticAnalyzer {
     }
     boolean onSyntaxError = false;
     private RuleData descentRecursive(RuleData ruleData,boolean debug, IntRef increment, EntryRef entry, Rule rule, Stack<Integer> parse) {
-
+        int line = -1;
         if (entry.getEntry() != null) {
 
             if (debug) spaces(increment.getInteger());
@@ -170,6 +170,7 @@ public class SintaxSemanticAnalyzer {
                     if (debug) Console.print(Console.WHITE_BOLD + "Production chosed " + Console.YELLOW_BOLD + prod + Console.WHITE_BOLD + " in " + Console.PURPLE_BOLD + rule + "\n");
                     if (debug) spaces(increment.getInteger());
                     if (debug) Console.print(Console.BLUE_BOLD + "Parse id: " + prod.getIdParse() + "\n");
+                    line = lexicAnalyzer.getIterator().getLine();
 
                     increment.setInteger(increment.getInteger() + 1);
                     parse.push(prod.getIdParse());//add to parse current production id because current token is in FIRST
@@ -184,7 +185,7 @@ public class SintaxSemanticAnalyzer {
                                     if (debug)
                                         Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.RED_BOLD + "  INVALID\n");
                                     onSyntaxError=true;
-                                    ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ prod.getAllElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+prod + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+                                    ErrorHandler.showSintaxError(line, new ProcessorError(-1, "Expecting "  +Console.ANSI_YELLOW+ prod.getAllElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+prod + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
 
                                 } else {//if terminal is equal to current token
                                     params.put((String)prod.getAllElements().get(j),entry.getEntry().getValue());
@@ -214,7 +215,7 @@ public class SintaxSemanticAnalyzer {
                                 if (debug) Console.print(Console.WHITE_BOLD+"EXECUTING "+ Console.CYAN_BOLD +prod.getRule()+" -> "+prod.getElements()+" : {"+action.getInfo()+"}"+Console.WHITE_BOLD+" WITH PARAMS "+params+"\n");
                                 List<RuleData> data=null;
                                 try {
-                                    data = action.apply(params, lexicAnalyzer.getHandler());
+                                    data = action.apply(line,params, lexicAnalyzer.getHandler());
                                 }catch(Exception e){
                                     ErrorHandler.showCompilerError(lexicAnalyzer.getIterator(), e);
                                 }
@@ -246,6 +247,7 @@ public class SintaxSemanticAnalyzer {
             }
             //TODO PARTE SEMANTICA LAMBDAS
             if (!foundProduction) {//not found production with  current token in FIRST
+                line = lexicAnalyzer.getIterator().getLine();
                 if (rule.isLambda()) {//is there any lambda production?
                     Set<String> set2 = follow(new IntRef(increment.getInteger() + 1), false, rule);
                     if(set2.contains(entry.getEntry().getKey())){
@@ -260,7 +262,7 @@ public class SintaxSemanticAnalyzer {
                             if (debug) spaces(increment.getInteger()+1);
                             if (debug) Console.print(Console.WHITE_BOLD+"EXECUTING "+ Console.CYAN_BOLD +rule.getLambdaAction().getInfo()+Console.WHITE_BOLD+" WITH PARAMS "+params+"\n");
 
-                            List<RuleData>data=rule.getLambdaAction().apply(map, lexicAnalyzer.getHandler());
+                            List<RuleData>data=rule.getLambdaAction().apply(line,map, lexicAnalyzer.getHandler());
 
                             if (debug) spaces(increment.getInteger()+1);
                             if (debug) Console.print(Console.WHITE_BOLD+"AND RETURNED "+data+"\n");
@@ -279,7 +281,9 @@ public class SintaxSemanticAnalyzer {
 
                     }else{
                         onSyntaxError=true;
-                        ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-6, "Lambda production available in "+Console.ANSI_YELLOW+rule+Console.ANSI_WHITE+" but FOLLOW of rule ("  +Console.ANSI_YELLOW+set2+Console.ANSI_WHITE+") doesn't contain current token "+Console.ANSI_YELLOW+entry.getEntry().getKey()));
+                        ErrorHandler.showSintaxError(line, new ProcessorError(-6, entry.getEntry().getKey()+" is not expected in this context"));
+                        ErrorHandler.showDeepSintaxError(line, new ProcessorError(-6, "Lambda production available in "+Console.ANSI_YELLOW+rule+Console.ANSI_WHITE+" but FOLLOW of rule ("  +Console.ANSI_YELLOW+set2+Console.ANSI_WHITE+") doesn't contain current token "+Console.ANSI_YELLOW+entry.getEntry().getKey()));
+
                         if(isContinueOnError()){
 
                             return new RuleData(null);
@@ -305,7 +309,7 @@ public class SintaxSemanticAnalyzer {
                                             if (debug) spaces(increment.getInteger());
                                             if (debug) Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.RED_BOLD + "  INVALID\n");
 
-                                            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-1, "Expecting "  +Console.ANSI_YELLOW+ withLambda.getAllElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+withLambda + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
+                                            ErrorHandler.showSintaxError(line, new ProcessorError(-1, "Expecting "  +Console.ANSI_YELLOW+ withLambda.getAllElements().get(j) +  Console.ANSI_WHITE+" in structure " +  Console.ANSI_YELLOW+rule+" -> "+withLambda + Console.ANSI_WHITE+ " but found " +Console.ANSI_YELLOW+ entry.getEntry().getKey()+Console.ANSI_WHITE));
                                         } else {//if terminal is equal to current token
                                             if (debug) spaces(increment.getInteger());
                                             if (debug) Console.print(Console.BLUE_BOLD + entry.getEntry().getKey() + Console.GREEN_BOLD + "  VALID\n");
@@ -328,11 +332,13 @@ public class SintaxSemanticAnalyzer {
                             }
                         } else {
                             onSyntaxError=true;
-                            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-4, "Checking lambda transition but FOLLOW not contains it"));
+                            ErrorHandler.showSintaxError(line, new ProcessorError(-4, "Checking lambda transition but FOLLOW not contains it"));
                         }
                     } else {
                         onSyntaxError=true;
-                        ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-5, "No production available for current character and lambda transition is not available for token " + entry.getEntry().getKey() + "\n"));
+                        ErrorHandler.showSintaxError(line, new ProcessorError(-6, entry.getEntry().getKey()+" is not expected in this context"));
+                        ErrorHandler.showDeepSintaxError(line, new ProcessorError(-5, "No production available for current character and lambda transition is not available for token " + entry.getEntry().getKey() + "\n"));
+
                     }
                 }
 
@@ -352,7 +358,7 @@ public class SintaxSemanticAnalyzer {
 
 
         } else {
-            ErrorHandler.showSintaxError(lexicAnalyzer.getFda().getIterator(), new FDAException(-2, "Unexpected end of tokens"));
+            ErrorHandler.showSintaxError(line, new ProcessorError(-2, "Unexpected end of tokens"));
         }
         return new RuleData(null);
 

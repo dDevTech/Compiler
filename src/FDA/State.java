@@ -112,7 +112,7 @@ public class State<T> {
                 character = (T) fda.getIterator().next();//read next character
             } else {
 
-                FDAException exception = new FDAException(-1, "REACH END OF ITERATOR BUT NOT REACHED FINAL STATE");
+                ProcessorError exception = new ProcessorError(-1, "REACH END OF ITERATOR BUT NOT REACHED FINAL STATE");
                 boolean notfinish = fda.onError(exception);
                 int internalCode = notfinish?1:-1;
                 return new FDAData<T>(internalCode, transition, this, prev);
@@ -137,7 +137,7 @@ public class State<T> {
         }
 
         if (nextState == null) {//If there is no available transition
-            FDAException exception = new FDAException(-2, noTransitionError);
+            ProcessorError exception = new ProcessorError(-2, noTransitionError);
 
             boolean notfinish = fda.onError(exception);
             int internalCode = notfinish?1:-1;
@@ -150,7 +150,7 @@ public class State<T> {
             }
             try {
                 transitionUsed.callActions(character, sequence, fda.getIterator());
-            } catch (FDAException e) {
+            } catch (ProcessorError e) {
                 boolean notfinish = fda.onError(e);
                 int internalCode = notfinish?1:-1;
                 return new FDAData<T>(internalCode, transition, this, fda.getIterator().getCurrentElement());

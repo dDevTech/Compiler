@@ -1,98 +1,32 @@
-< let ,> 
-< int ,> 
-< id , 0> 
-< puntoycoma ,> 
-< let ,> 
-< int ,> 
-< id , 1> 
-< puntoycoma ,> 
-< let ,> 
-< boolean ,> 
-< id , 2> 
-< puntoycoma ,> 
-< let ,> 
-< boolean ,> 
-< id , 3> 
-< puntoycoma ,> 
-< let ,> 
-< string ,> 
-< id , 4> 
-< puntoycoma ,> 
-< input ,> 
-< abrePar ,> 
-< id , 0> 
-< cierraPar ,> 
-< puntoycoma ,> 
-< id , 2> 
-< asig ,> 
-< id , 3> 
-< puntoycoma ,> 
-< if ,> 
-< abrePar ,> 
-< id , 2> 
-< and ,> 
-< id , 3> 
-< cierraPar ,> 
-< id , 4> 
-< asig ,> 
-< cadena , "hello"> 
-< puntoycoma ,> 
-< id , 1> 
-< asig ,> 
-< id , 0> 
-< resta ,> 
-< constanteEntera , 378> 
-< puntoycoma ,> 
-< print ,> 
-< abrePar ,> 
-< abrePar ,> 
-< abrePar ,> 
-< constanteEntera , 33> 
-< resta ,> 
-< id , 0> 
-< suma ,> 
-< id , 1> 
-< cierraPar ,> 
-< cierraPar ,> 
-< cierraPar ,> 
-< puntoycoma ,> 
 < function ,> 
-< id , 5> 
+< id , 0> 
 < boolean ,> 
 < abrePar ,> 
 < boolean ,> 
-< id , 6> 
+< id , 1> 
+< coma ,> 
+< int ,> 
+< id , 2> 
 < cierraPar ,> 
 < abreLlave ,> 
-< id , 7> 
-< asig ,> 
-< constanteEntera , 8> 
-< puntoycoma ,> 
 < if ,> 
 < abrePar ,> 
-< id , 2> 
-< cierraPar ,> 
-< id , 3> 
-< asig ,> 
-< id , 5> 
+< id , 1> 
 < abrePar ,> 
-< id , 6> 
 < cierraPar ,> 
+< igual ,> 
+< constanteEntera , 5> 
+< cierraPar ,> 
+< abreLlave ,> 
+< return ,> 
+< constanteEntera , 0> 
 < puntoycoma ,> 
 < return ,> 
-< id , 6> 
+< id , 1> 
 < puntoycoma ,> 
 < cierraLlave ,> 
-< if ,> 
-< abrePar ,> 
-< id , 5> 
-< abrePar ,> 
-< id , 3> 
-< cierraPar ,> 
-< cierraPar ,> 
-< print ,> 
-< abrePar ,> 
-< id , 7> 
-< cierraPar ,> 
+< return ,> 
+< cadena , "aaa"> 
 < puntoycoma ,> 
+< cierraLlave ,> 
 < eof ,> 

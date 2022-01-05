@@ -1,7 +1,6 @@
 package Analyzer.SymbolTable;
 
 import Common.ErrorHandler;
-import FDA.FDAException;
 import Tools.FileWrite;
 
 import java.util.ArrayList;

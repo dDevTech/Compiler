@@ -13,7 +13,7 @@ public abstract class SemanticAction{
     public SemanticAction( ){
 
     }
-    public abstract List<RuleData> apply(Map<String,Object> params, SymbolTableHandler handler);
+    public abstract List<RuleData> apply(int line,Map<String,Object> params, SymbolTableHandler handler);
     public SemanticAction(String info){
         this.info = info;
     }

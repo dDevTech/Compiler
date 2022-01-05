@@ -69,7 +69,7 @@ public abstract class FDA<T>{
 
 
     }
-    protected boolean onError(FDAException exception){
+    protected boolean onError(ProcessorError exception){
         printOnFinish(debug,false,iterator.getCurrentElement().toString());
         ErrorHandler.showLexicError(getIterator(),exception);
         if(continueOnError){

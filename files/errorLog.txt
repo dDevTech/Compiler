@@ -1,0 +1,12 @@
+[10:16:51.934]  [SEMANTIC ERROR]  [37mVariable 'a' is not a function and cannot be called[35m in line 3[34m[37m with semantic code -7
+
+[10:16:51.947]  [SEMANTIC ERROR]  [37m==/!= operators must have  INTEGER  operands and are of type:  ERROR_TYPE and INTEGER[35m in line 3[34m[37m with semantic code -17
+
+[10:16:51.966]  [SEMANTIC ERROR]  [37mCondition of if must be LOGIC and is of type ERROR_TYPE[35m in line 3[34m[37m with semantic code -3
+
+[10:16:51.973]  [SEMANTIC ERROR]  [37mStatements must be OK and there are sentences with errors[35m in line 3[34m[37m with semantic code -12
+
+[10:16:51.973]  [SEMANTIC ERROR]  [37mReturn types in function SumaAlCuadrado must be of type BOOLEAN and there is one of type STRING[35m in line 1[34m[37m with semantic code -13
+
+[10:16:51.974]  [SEMANTIC ERROR]  [37mReturn types in function SumaAlCuadrado must be of type BOOLEAN and there is one of type INTEGER[35m in line 1[34m[37m with semantic code -13
+

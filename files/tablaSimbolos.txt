@@ -1,37 +1,18 @@
 TABLA # 0:
-* LEXEMA : 'n1'
-ATRIBUTOS:
-+ tipo : 'INTEGER'
-+ despl : 0
-* LEXEMA : 'n2'
-ATRIBUTOS:
-+ tipo : 'INTEGER'
-+ despl : 1
-* LEXEMA : 'l1'
-ATRIBUTOS:
-+ tipo : 'BOOLEAN'
-+ despl : 2
-* LEXEMA : 'l2'
-ATRIBUTOS:
-+ tipo : 'BOOLEAN'
-+ despl : 3
-* LEXEMA : 'cad'
-ATRIBUTOS:
-+ tipo : 'STRING'
-+ despl : 4
-* LEXEMA : 'ff'
+* LEXEMA : 'SumaAlCuadrado'
 ATRIBUTOS:
 + tipo : 'FUNCTION'
-+ numParam : 1
++ numParam : 2
+ + TipoParam1 : 'INTEGER'
  + TipoParam1 : 'BOOLEAN'
 + TipoRetorno : 'BOOLEAN'
-+ EtiqFuncion : 'ff_0'
-* LEXEMA : 'varglobal'
-ATRIBUTOS:
-+ tipo : 'INTEGER'
-+ despl : 68
++ EtiqFuncion : 'SumaAlCuadrado_0'
 TABLA # 1:
-* LEXEMA : 'ss'
+* LEXEMA : 'a'
 ATRIBUTOS:
 + tipo : 'BOOLEAN'
++ despl : 1
+* LEXEMA : 'b'
+ATRIBUTOS:
++ tipo : 'INTEGER'
 + despl : 0
